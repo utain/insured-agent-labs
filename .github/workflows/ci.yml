@@ -12,8 +12,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ── Detect which parts of the codebase changed ──────────────────────────────
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      web: ${{ steps.filter.outputs.web }}
+      e2e: ${{ steps.filter.outputs.e2e }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'web/**'
+              - '.github/workflows/ci.yml'
+            e2e:
+              - 'backend/**'
+              - 'web/**'
+              - 'e2e/**'
+              - 'docker-compose.yml'
+              - 'Dockerfile'
+              - '.github/workflows/ci.yml'
+
+  # ── Backend: clippy + cargo test ────────────────────────────────────────────
   backend:
     name: Backend (clippy + test)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,8 +63,11 @@ jobs:
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
 
+  # ── Web: svelte-check + lint + vitest + build ────────────────────────────────
   web:
     name: Web (check + lint + unit)
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -58,8 +92,11 @@ jobs:
       - run: pnpm test:unit -- --run
       - run: pnpm build
 
+  # ── Blackbox e2e: full Compose stack + Playwright ───────────────────────────
   e2e:
     name: Blackbox e2e (API + UI vs. compose stack)
+    needs: changes
+    if: needs.changes.outputs.e2e == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
