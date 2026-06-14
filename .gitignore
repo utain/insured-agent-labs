@@ -1,0 +1,35 @@
+# ===== Rust / backend =====
+backend/target
+backend/**/*.rs.bk
+
+# ===== Node / web =====
+web/node_modules
+web/.output
+web/.vercel
+web/.netlify
+web/.wrangler
+web/.svelte-kit
+web/build
+web/test-results
+web/playwright-report
+web/playwright/.cache
+web/vite.config.js.timestamp-*
+web/vite.config.ts.timestamp-*
+
+# Paraglide generated output (regenerated from project.inlang on build/dev)
+web/src/lib/paraglide
+web/project.inlang/cache
+
+# ===== Env =====
+.env
+.env.*
+!.env.example
+!.env.test
+
+# ===== OS / editors =====
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
