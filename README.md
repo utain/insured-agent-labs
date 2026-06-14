@@ -34,6 +34,18 @@ flowchart LR
 
 ---
 
+## Screenshots
+
+| Login | Dashboard |
+|---|---|
+| ![Login](docs/screenshots/01-login.png) | ![Dashboard](docs/screenshots/02-dashboard.png) |
+
+| Product Catalog | Swagger API Docs |
+|---|---|
+| ![Catalog](docs/screenshots/03-catalog.png) | ![Swagger](docs/screenshots/05-swagger.png) |
+
+---
+
 ## Quick start
 
 ### Prerequisites
