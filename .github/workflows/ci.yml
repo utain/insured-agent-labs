@@ -46,6 +46,10 @@ jobs:
       - name: Enable pnpm
         run: corepack enable
       - run: pnpm install --frozen-lockfile
+      # Paraglide generates $lib/paraglide/* from project.inlang at dev/build time.
+      # It's gitignored, so we compile it explicitly before svelte-check.
+      - name: Compile Paraglide i18n
+        run: pnpm exec paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide
       # The vitest `client` project runs in a real browser (Playwright provider).
       - name: Install Chromium for browser unit tests
         run: pnpm exec playwright install --with-deps chromium

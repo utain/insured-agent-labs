@@ -84,7 +84,7 @@ async fn list_transactions(
         .collect();
 
     // Sort by updated_at desc.
-    items.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
+    items.sort_by_key(|b| std::cmp::Reverse(b.updated_at));
 
     let total = items.len();
     let page = filter.page.unwrap_or(1).max(1);
