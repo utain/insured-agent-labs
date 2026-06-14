@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: insureagentlabs
+  labels:
+    app.kubernetes.io/name: web
+    app.kubernetes.io/part-of: insureagentlabs
+spec:
+  replicas: 2 # stateless SSR; safe to scale out.
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: web
+    spec:
+      containers:
+        - name: web
+          image: insureagentlabs-web:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: HOST
+              value: 0.0.0.0
+            - name: PORT
+              value: "3000"
+            - name: NODE_ENV
+              value: production
+            # In-cluster DNS name of the backend Service.
+            - name: RUST_API_URL
+              value: http://backend.insureagentlabs.svc.cluster.local:3000
+            # Public origin (the Ingress host) — adapter-node validates form
+            # POSTs (CSRF) against this. Must match how the browser reaches web.
+            - name: ORIGIN
+              value: http://insureagentlabs.localtest.me
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  namespace: insureagentlabs
+  labels:
+    app.kubernetes.io/name: web
+spec:
+  selector:
+    app.kubernetes.io/name: web
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

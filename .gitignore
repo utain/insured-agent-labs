@@ -20,6 +20,11 @@ web/vite.config.ts.timestamp-*
 web/src/lib/paraglide
 web/project.inlang/cache
 
+# ===== e2e (blackbox Playwright suite) =====
+e2e/node_modules
+e2e/playwright-report
+e2e/test-results
+
 # ===== Env =====
 .env
 .env.*

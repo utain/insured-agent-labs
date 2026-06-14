@@ -90,6 +90,22 @@ All admin endpoints require either the `ADMIN_SECRET` header or a logged-in `age
 
 ---
 
+## Requirements & roadmap
+
+- [`docs/requirements/`](docs/requirements/README.md) — per-feature requirements specs (data model, API contract, business rules, acceptance criteria).
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — build status and proposed future phases.
+- [`docs/FINDINGS.md`](docs/FINDINGS.md) — defects surfaced by the blackbox suite.
+
+---
+
+## Deploy & test
+
+- **Run the full stack:** `make up` (Docker Compose) → web at `http://localhost:5173`, backend at `http://localhost:3000`. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for native, Compose, and Kubernetes (`deploy/k8s/`) workflows. `make help` lists all targets.
+- **Blackbox tests:** [`e2e/`](e2e/README.md) is a standalone Playwright project with an `api` project (integration-level REST tests, hit the backend directly) and a `ui` project (browser e2e against the web app). Run `make e2e` against a running stack, or `make stack-e2e` to bring the stack up, test, and tear down.
+- **CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs three jobs on every push/PR — backend (`clippy` + `cargo test`), web (`check` + `lint` + unit), and the blackbox suite against a freshly-built Compose stack (Playwright report uploaded as an artifact).
+
+---
+
 ## Build plan & status
 
 The implementation follows 9 phases tracked in repository memory:

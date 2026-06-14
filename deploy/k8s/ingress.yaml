@@ -1,0 +1,27 @@
+# Routes the public host to the web SSR service. The Rust API is NOT exposed
+# publicly here — the browser only talks to `web`, which proxies to `backend`
+# in-cluster. To give API-QA trainees direct Swagger/curl access, either add a
+# second path/host pointing at the `backend` Service, or port-forward:
+#   kubectl -n insureagentlabs port-forward svc/backend 3000:3000
+#
+# Requires an ingress controller (e.g. ingress-nginx). On kind/minikube,
+# add `insureagentlabs.localtest.me` (resolves to 127.0.0.1) or edit /etc/hosts.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: insureagentlabs
+  namespace: insureagentlabs
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+    - host: insureagentlabs.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 80

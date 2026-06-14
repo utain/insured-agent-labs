@@ -1,0 +1,13 @@
+node_modules
+.svelte-kit
+build
+test-results
+playwright-report
+playwright/.cache
+src/lib/paraglide
+project.inlang/cache
+.env
+.env.*
+!.env.example
+Dockerfile
+.dockerignore
