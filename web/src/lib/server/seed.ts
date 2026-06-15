@@ -120,20 +120,80 @@ function buildProducts(): CatalogProduct[] {
 
 function buildRiders(): CatalogRiderPlan[] {
 	const riders: CatalogRiderPlan[] = [];
-	const types: [RiderType, string, string, number][] = [
-		['health', 'HEALTH', 'Health', 5],
-		['ci', 'CI', 'Critical Illness', 6],
-		['pa', 'PA', 'Personal Accident', 6],
-		['tpd', 'TPD', 'Total Permanent Disability', 5],
-		['wp', 'WP', 'Waiver of Premium', 5]
+	// [riderType, code-prefix, benefit blurb, plan display names].
+	// Plan codes stay `${prefix}_PLAN_${i}` (1-indexed) — packages & tests rely on them.
+	const types: [RiderType, string, string, string[]][] = [
+		[
+			'health',
+			'HEALTH',
+			'Inpatient and outpatient medical expense cover',
+			[
+				'Vesta HealthGuard Essential',
+				'Vesta HealthGuard Plus',
+				'Aegis Care Select',
+				'Aegis Care Premier',
+				'Lumen Total Health'
+			]
+		],
+		[
+			'ci',
+			'CI',
+			'Lump-sum payout on diagnosis of a covered critical illness',
+			[
+				'Vesta CI Shield',
+				'Vesta Multi-Pay CI',
+				'Aegis CritiCare',
+				'Aegis CritiCare Plus',
+				'Lumen CI Secure',
+				'Lumen CI Perfect'
+			]
+		],
+		[
+			'pa',
+			'PA',
+			'Accidental injury and death benefit, 24/7 worldwide',
+			[
+				'Vesta Accident Guard',
+				'Vesta Accident Extra',
+				'Aegis PA Protect',
+				'Aegis PA Plus',
+				'Lumen SafeStep',
+				'Lumen SafeStep Pro'
+			]
+		],
+		[
+			'tpd',
+			'TPD',
+			'Lump sum on total and permanent disability',
+			[
+				'Vesta TPD Cover',
+				'Vesta TPD Cover Plus',
+				'Aegis TPD Shield',
+				'Aegis TPD Shield Pro',
+				'Lumen DisabilityCare'
+			]
+		],
+		[
+			'wp',
+			'WP',
+			'Waives future premiums if the insured becomes disabled',
+			[
+				'Vesta Premium Waiver',
+				'Vesta Premium Waiver Plus',
+				'Aegis Payor Protect',
+				'Aegis Payor Protect Plus',
+				'Lumen Premium Relief'
+			]
+		]
 	];
-	for (const [riderType, prefix, name, count] of types) {
-		for (let i = 1; i <= count; i++) {
+	for (const [riderType, prefix, benefit, names] of types) {
+		names.forEach((planName, idx) => {
+			const i = idx + 1;
 			riders.push({
 				code: `${prefix}_PLAN_${i}`,
 				rider_type: riderType,
-				name: `${name} Plan ${i}`,
-				description: `${name} supplementary coverage, tier ${i}.`,
+				name: planName,
+				description: `${benefit}.`,
 				min_age: 18,
 				max_age: 65,
 				sum_assured_options: [50_000, 100_000, 200_000, 500_000, 1_000_000],
@@ -149,7 +209,7 @@ function buildRiders(): CatalogRiderPlan[] {
 								[60, 10.0 + 1.2 * i]
 							]
 			});
-		}
+		});
 	}
 	return riders;
 }

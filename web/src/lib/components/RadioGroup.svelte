@@ -48,10 +48,8 @@
 				checked={value === opt.value}
 				onchange={() => select(opt.value)}
 			/>
-			<span class={variant === 'tile' ? 'text-sm font-semibold text-slate-900' : ''}
-				>{opt.label}</span
-			>
-			{#if opt.hint}<span class="text-xs text-slate-500">{opt.hint}</span>{/if}
+			<span class={variant === 'tile' ? 'text-sm font-semibold' : ''}>{opt.label}</span>
+			{#if opt.hint}<span class="v-hint text-xs">{opt.hint}</span>{/if}
 		</label>
 	{/each}
 </div>

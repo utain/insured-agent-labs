@@ -1,0 +1,18 @@
+<svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vesta">
+  <defs>
+    <linearGradient id="vestaFlame" x1="14" y1="46" x2="42" y2="8" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0E94AC"></stop>
+      <stop offset="0.45" stop-color="#14B6CF"></stop>
+      <stop offset="0.8" stop-color="#54D6E9"></stop>
+      <stop offset="1" stop-color="#8B73FB"></stop>
+    </linearGradient>
+  </defs>
+  
+  <rect x="2" y="2" width="52" height="52" rx="15" fill="#0D1827"></rect>
+  <rect x="2.75" y="2.75" width="50.5" height="50.5" rx="14.25" stroke="#fff" stroke-opacity="0.08" stroke-width="1.5"></rect>
+  
+  <path d="M16 17.5 L27 40 L34.5 24.5" stroke="url(#vestaFlame)" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round"></path>
+  
+  <path d="M34.5 24.5 C 36.6 20, 40.4 18.4, 41.8 13.6 C 43.4 17.4, 42 21.2, 38.7 23.4" fill="none" stroke="url(#vestaFlame)" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round"></path>
+  <circle cx="40.5" cy="11" r="2.6" fill="#F3C46B"></circle>
+</svg>

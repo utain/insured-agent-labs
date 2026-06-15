@@ -1,67 +1,599 @@
 @import 'tailwindcss';
 
-/* Lightweight design system shared across the product. */
+/* ============================================================
+   VESTA AGENTSURED · DESIGN SYSTEM
+   Ported from the Vesta design tokens (claude.ai/design handoff).
+   Dark is the default theme; [data-theme="light"] swaps semantic
+   surface/text/border tokens while the base ramps stay constant.
+   ============================================================ */
 
+/* ---- Webfont: Noto Sans Thai (self-hosted, covers EN + TH) ---- */
+@font-face {
+	font-family: 'Noto Sans Thai';
+	src:
+		local('Noto Sans Thai'),
+		url('/fonts/NotoSansThai-VariableFont_wdth_wght.ttf') format('truetype');
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
+}
+
+:root {
+	/* ---- Brand: Vesta Cyan ---- */
+	--cyan-50: #e6fafe;
+	--cyan-100: #c2f2fb;
+	--cyan-200: #8fe6f4;
+	--cyan-300: #54d6e9;
+	--cyan-400: #2dc8de;
+	--cyan-500: #14b6cf;
+	--cyan-600: #0e94ac;
+	--cyan-700: #0c7386;
+	--cyan-800: #0e5a69;
+	--cyan-900: #0f4a56;
+
+	/* ---- Brand: Vesta Violet (AI / agentic accent) ---- */
+	--violet-50: #f1eeff;
+	--violet-100: #e2dbff;
+	--violet-200: #c7baff;
+	--violet-300: #a793ff;
+	--violet-400: #8b73fb;
+	--violet-500: #7458ee;
+	--violet-600: #5e45ce;
+	--violet-700: #4a36a3;
+	--violet-800: #392a7e;
+
+	/* ---- Hearth Ember (rare premium accent) ---- */
+	--ember-400: #f3c46b;
+	--ember-500: #e2a23c;
+	--ember-600: #c0832a;
+
+	/* ---- Navy neutral ramp ---- */
+	--navy-0: #ffffff;
+	--navy-25: #f7f9fc;
+	--navy-50: #eef2f8;
+	--navy-100: #dce3ee;
+	--navy-200: #b9c5d6;
+	--navy-300: #8e9db4;
+	--navy-400: #66768f;
+	--navy-500: #495a72;
+	--navy-600: #34465d;
+	--navy-700: #233448;
+	--navy-800: #172638;
+	--navy-850: #121f2f;
+	--navy-900: #0d1827;
+	--navy-925: #0a121f;
+	--navy-950: #070d17;
+
+	/* ---- Finance semantics ---- */
+	--gain-400: #34e0a1;
+	--gain-500: #16c784;
+	--gain-600: #0fa06a;
+	--loss-400: #ff7088;
+	--loss-500: #f0476a;
+	--loss-600: #ce2f50;
+	--warn-400: #f8c261;
+	--warn-500: #f5a623;
+	--warn-600: #d2861a;
+
+	/* ---- Typography ---- */
+	--font-display: 'Noto Sans Thai', ui-sans-serif, system-ui, -apple-system, sans-serif;
+	--font-sans: 'Noto Sans Thai', ui-sans-serif, system-ui, -apple-system, sans-serif;
+	--font-mono: var(--font-sans);
+
+	--fw-regular: 400;
+	--fw-medium: 500;
+	--fw-semibold: 600;
+	--fw-bold: 700;
+
+	--text-2xs: 11px;
+	--text-xs: 12px;
+	--text-sm: 13px;
+	--text-base: 15px;
+	--text-md: 17px;
+	--text-lg: 20px;
+	--text-xl: 24px;
+	--text-2xl: 30px;
+	--text-3xl: 38px;
+	--text-4xl: 48px;
+	--text-5xl: 60px;
+	--text-6xl: 76px;
+
+	--leading-none: 1;
+	--leading-tight: 1.15;
+	--leading-snug: 1.3;
+	--leading-normal: 1.5;
+	--leading-relaxed: 1.65;
+
+	--tracking-tighter: -0.03em;
+	--tracking-tight: -0.015em;
+	--tracking-normal: 0;
+	--tracking-wide: 0.02em;
+	--tracking-caps: 0.08em;
+
+	--num-tabular: 'tnum' 1, 'lnum' 1;
+
+	/* ---- Spacing & layout ---- */
+	--container-sm: 640px;
+	--container-md: 840px;
+	--container-lg: 1080px;
+	--container-xl: 1280px;
+
+	--control-h-sm: 32px;
+	--control-h-md: 40px;
+	--control-h-lg: 48px;
+	--sidebar-w: 248px;
+	--sidebar-w-collapsed: 72px;
+	--topbar-h: 64px;
+
+	/* ---- Elevation ---- */
+	--radius-xs: 4px;
+	--radius-sm: 6px;
+	--radius-md: 10px;
+	--radius-lg: 14px;
+	--radius-xl: 20px;
+	--radius-2xl: 28px;
+	--radius-pill: 999px;
+	--radius-circle: 50%;
+
+	--shadow-xs: 0 1px 2px rgba(2, 6, 12, 0.4);
+	--shadow-sm: 0 2px 6px rgba(2, 6, 12, 0.45);
+	--shadow-md: 0 8px 24px rgba(2, 6, 12, 0.5);
+	--shadow-lg: 0 18px 48px rgba(2, 6, 12, 0.58);
+	--shadow-xl: 0 32px 80px rgba(2, 6, 12, 0.65);
+	--glow-brand: 0 0 0 1px rgba(20, 182, 207, 0.3), 0 8px 32px rgba(20, 182, 207, 0.22);
+	--ring-inset: inset 0 0 0 1px var(--border-subtle);
+	--blur-md: 16px;
+
+	/* ---- Motion ---- */
+	--dur-fast: 140ms;
+	--dur-base: 220ms;
+	--dur-slow: 340ms;
+	--ease-standard: cubic-bezier(0.2, 0, 0, 1);
+	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	--transition-colors:
+		color var(--dur-fast) var(--ease-standard),
+		background-color var(--dur-fast) var(--ease-standard),
+		border-color var(--dur-fast) var(--ease-standard);
+
+	/* ============================================================
+	   SEMANTIC ALIASES — DARK (default)
+	   ============================================================ */
+	--surface-app: var(--navy-950);
+	--surface-sunken: #05090f;
+	--surface-card: var(--navy-900);
+	--surface-raised: var(--navy-850);
+	--surface-overlay: var(--navy-800);
+	--surface-inset: #0b1521;
+
+	--border-subtle: rgba(255, 255, 255, 0.06);
+	--border-default: rgba(255, 255, 255, 0.1);
+	--border-strong: rgba(255, 255, 255, 0.16);
+	--border-focus: var(--cyan-500);
+
+	--text-primary: #eaf1f9;
+	--text-secondary: #a9b8cc;
+	--text-tertiary: #6f8198;
+	--text-disabled: #4a5b70;
+	--text-inverse: var(--navy-950);
+	--text-onbrand: #04141a;
+
+	--brand: var(--cyan-500);
+	--brand-hover: var(--cyan-400);
+	--brand-active: var(--cyan-600);
+	--brand-subtle: rgba(20, 182, 207, 0.14);
+	--brand-ring: rgba(20, 182, 207, 0.4);
+	--accent: var(--violet-500);
+	--accent-subtle: rgba(116, 88, 238, 0.16);
+
+	--up: var(--gain-500);
+	--up-subtle: rgba(22, 199, 132, 0.14);
+	--down: var(--loss-500);
+	--down-subtle: rgba(240, 71, 106, 0.14);
+	--warning: var(--warn-500);
+	--warning-subtle: rgba(245, 166, 35, 0.14);
+
+	--focus-ring: 0 0 0 2px var(--surface-app), 0 0 0 4px var(--brand-ring);
+
+	color-scheme: dark;
+}
+
+[data-theme='light'] {
+	--surface-app: var(--navy-25);
+	--surface-sunken: var(--navy-50);
+	--surface-card: var(--navy-0);
+	--surface-raised: var(--navy-0);
+	--surface-overlay: var(--navy-50);
+	--surface-inset: var(--navy-25);
+
+	--border-subtle: rgba(13, 24, 39, 0.07);
+	--border-default: rgba(13, 24, 39, 0.12);
+	--border-strong: rgba(13, 24, 39, 0.2);
+	--border-focus: var(--cyan-600);
+
+	--text-primary: #0e1a2b;
+	--text-secondary: #44566b;
+	--text-tertiary: #69788e;
+	--text-disabled: #a3b0c2;
+	--text-inverse: var(--navy-0);
+	--text-onbrand: #04141a;
+
+	--brand: var(--cyan-600);
+	--brand-hover: var(--cyan-500);
+	--brand-active: var(--cyan-700);
+	--brand-subtle: rgba(20, 182, 207, 0.12);
+	--brand-ring: rgba(14, 148, 172, 0.35);
+	--accent: var(--violet-600);
+	--accent-subtle: rgba(94, 69, 206, 0.12);
+
+	--up: var(--gain-600);
+	--up-subtle: rgba(15, 160, 106, 0.12);
+	--down: var(--loss-600);
+	--down-subtle: rgba(206, 47, 80, 0.12);
+	--warning: var(--warn-600);
+	--warning-subtle: rgba(210, 134, 26, 0.14);
+
+	--shadow-xs: 0 1px 2px rgba(13, 24, 39, 0.06);
+	--shadow-sm: 0 2px 8px rgba(13, 24, 39, 0.08);
+	--shadow-md: 0 8px 24px rgba(13, 24, 39, 0.1);
+	--shadow-lg: 0 18px 48px rgba(13, 24, 39, 0.12);
+	--shadow-xl: 0 32px 80px rgba(13, 24, 39, 0.16);
+	--glow-brand: 0 0 0 1px rgba(20, 182, 207, 0.3), 0 8px 28px rgba(20, 182, 207, 0.18);
+
+	color-scheme: light;
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+html {
+	-webkit-text-size-adjust: 100%;
+}
+
+body {
+	margin: 0;
+	font-family: var(--font-sans);
+	font-size: var(--text-base);
+	line-height: var(--leading-normal);
+	color: var(--text-primary);
+	background: var(--surface-app);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+	font-family: var(--font-display);
+	letter-spacing: var(--tracking-tight);
+	line-height: var(--leading-tight);
+	color: var(--text-primary);
+	margin: 0;
+}
+
+p {
+	margin: 0;
+}
+
+[data-num] {
+	font-feature-settings: var(--num-tabular);
+	font-variant-numeric: tabular-nums lining-nums;
+}
+
+::selection {
+	background: var(--brand-subtle);
+	color: var(--text-primary);
+}
+
+:focus-visible {
+	outline: none;
+	box-shadow: var(--focus-ring);
+	border-radius: var(--radius-sm);
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+	box-shadow: none;
+}
+
+* {
+	scrollbar-width: thin;
+	scrollbar-color: var(--border-strong) transparent;
+}
+*::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+	background: var(--border-strong);
+	border-radius: var(--radius-pill);
+	border: 2px solid transparent;
+	background-clip: content-box;
+}
+
+@keyframes vsPulse {
+	0% {
+		transform: scale(1);
+		opacity: 0.5;
+	}
+	70% {
+		transform: scale(2.4);
+		opacity: 0;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+@keyframes vsRise {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+@keyframes vsSpin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+.vs-rise {
+	animation: vsRise 0.34s cubic-bezier(0.2, 0, 0, 1) both;
+}
+.vs-spin {
+	animation: vsSpin 0.9s linear infinite;
+}
+
+/* ============================================================
+   COMPONENT LAYER — Vesta primitives
+   ============================================================ */
 @layer components {
-	.btn,
-	.btn-primary,
-	.btn-secondary,
-	.btn-ghost,
-	.btn-danger {
-		@apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition focus:ring-2 focus:ring-offset-1 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50;
-	}
-	.btn-primary {
-		@apply bg-indigo-600 text-white hover:bg-indigo-500 focus:ring-indigo-500;
-	}
-	.btn-secondary {
-		@apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus:ring-slate-400;
-	}
-	.btn-ghost {
-		@apply text-slate-600 hover:bg-slate-100 focus:ring-slate-300;
-	}
-	.btn-danger {
-		@apply border border-red-200 bg-white text-red-600 hover:bg-red-50 focus:ring-red-400;
+	.v-card {
+		background: var(--surface-card);
+		border-radius: var(--radius-lg);
+		box-shadow: var(--ring-inset), var(--shadow-sm);
 	}
 
-	.card {
-		@apply rounded-xl border border-slate-200 bg-white shadow-sm;
+	.v-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		height: var(--control-h-md);
+		padding: 0 16px;
+		border: 1px solid transparent;
+		border-radius: var(--radius-md);
+		font-family: var(--font-sans);
+		font-size: var(--text-sm);
+		font-weight: 600;
+		line-height: 1;
+		cursor: pointer;
+		text-decoration: none;
+		white-space: nowrap;
+		transition: var(--transition-colors);
+	}
+	.v-btn:disabled {
+		opacity: 0.55;
+		cursor: not-allowed;
+	}
+	.v-btn-primary {
+		background: var(--brand);
+		color: var(--text-onbrand);
+		box-shadow: var(--shadow-xs);
+	}
+	.v-btn-primary:not(:disabled):hover {
+		background: var(--brand-hover);
+	}
+	.v-btn-secondary {
+		background: var(--surface-raised);
+		color: var(--text-secondary);
+		border-color: var(--border-default);
+	}
+	.v-btn-secondary:not(:disabled):hover {
+		color: var(--text-primary);
+		border-color: var(--border-strong);
+	}
+	.v-btn-ghost {
+		background: transparent;
+		color: var(--text-secondary);
+	}
+	.v-btn-ghost:not(:disabled):hover {
+		background: var(--surface-overlay);
+		color: var(--text-primary);
+	}
+	.v-btn-sm {
+		height: var(--control-h-sm);
+		padding: 0 12px;
+		font-size: var(--text-xs);
+		border-radius: var(--radius-sm);
+	}
+	.v-btn-lg {
+		height: var(--control-h-lg);
+		font-size: var(--text-md);
 	}
 
-	.field-label {
-		@apply mb-1 block text-sm font-medium text-slate-700;
+	.v-input {
+		width: 100%;
+		height: var(--control-h-md);
+		padding: 0 14px;
+		background: var(--surface-inset);
+		border: 1px solid var(--border-default);
+		border-radius: var(--radius-md);
+		color: var(--text-primary);
+		font-family: var(--font-sans);
+		font-size: var(--text-base);
+		outline: none;
+		transition: var(--transition-colors);
 	}
-	.field-input {
-		@apply w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500;
+	.v-input:focus {
+		border-color: var(--border-focus);
 	}
-	.field-error {
-		@apply mt-1 text-xs text-red-600;
+	.v-input::placeholder {
+		color: var(--text-tertiary);
+	}
+	.v-input-lg {
+		height: var(--control-h-lg);
+	}
+	select.v-input {
+		cursor: pointer;
+		appearance: none;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236f8198' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right 12px center;
+		padding-right: 36px;
 	}
 
-	.badge {
-		@apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+	.v-label {
+		display: block;
+		font-size: var(--text-sm);
+		font-weight: 500;
+		color: var(--text-secondary);
+		margin-bottom: 6px;
+	}
+	.v-field-error {
+		display: block;
+		font-size: var(--text-xs);
+		color: var(--down);
+		margin-top: 5px;
+	}
+	.v-eyebrow {
+		font-size: var(--text-2xs);
+		font-weight: 600;
+		letter-spacing: var(--tracking-caps);
+		text-transform: uppercase;
+		color: var(--text-tertiary);
+	}
+	.v-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		padding: 3px 9px;
+		border-radius: 999px;
+		font-size: var(--text-2xs);
+		font-weight: 600;
+		text-transform: capitalize;
+	}
+	.v-h1 {
+		font-size: var(--text-2xl);
+		font-weight: 700;
+		letter-spacing: -0.015em;
+		margin: 0;
+	}
+	.v-sub {
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+		margin: 0;
 	}
 
-	/* Modern radio controls — a label wrapping a visually-hidden radio. Selected
-	   state is driven by :has(input:checked), so it works without JS too. */
+	.v-alert-error {
+		display: flex;
+		align-items: flex-start;
+		gap: 10px;
+		padding: 12px 14px;
+		border-radius: var(--radius-md);
+		background: var(--down-subtle);
+		box-shadow: inset 0 0 0 1px rgba(240, 71, 106, 0.25);
+		font-size: var(--text-sm);
+		color: var(--loss-400);
+	}
+
+	/* Segmented control */
+	.v-seg {
+		display: inline-flex;
+		gap: 2px;
+		padding: 3px;
+		background: var(--surface-inset);
+		border-radius: var(--radius-md);
+		box-shadow: var(--ring-inset);
+	}
+	.v-seg button {
+		padding: 6px 13px;
+		border: none;
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+		font-family: var(--font-sans);
+		font-size: var(--text-sm);
+		font-weight: 500;
+		background: transparent;
+		color: var(--text-tertiary);
+		transition: var(--transition-colors);
+	}
+	.v-seg button.is-active {
+		background: var(--surface-raised);
+		color: var(--text-primary);
+		box-shadow: var(--shadow-xs);
+	}
+
+	/* Avatar / initials chip */
+	.v-avatar {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		flex: none;
+		background: linear-gradient(140deg, var(--navy-600), var(--navy-800));
+		color: var(--text-secondary);
+		font-weight: 600;
+	}
+
+	/* ---- Modern radio controls (RadioGroup.svelte) — Vesta look ---- */
 	.radio-pill {
-		@apply cursor-pointer rounded-lg border border-slate-300 bg-white px-4 py-2 text-center text-sm font-medium text-slate-700 transition select-none hover:border-slate-400 hover:bg-slate-50;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		height: var(--control-h-md);
+		padding: 0 14px;
+		border: 1px solid var(--border-default);
+		border-radius: var(--radius-md);
+		background: var(--surface-inset);
+		color: var(--text-secondary);
+		font-size: var(--text-sm);
+		font-weight: 500;
+		user-select: none;
+		transition: var(--transition-colors);
+	}
+	.radio-pill:hover {
+		border-color: var(--border-strong);
+		color: var(--text-primary);
 	}
 	.radio-pill:has(input:checked) {
-		@apply border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500;
+		border-color: var(--brand);
+		background: var(--brand-subtle);
+		color: var(--brand);
 	}
 	.radio-tile {
-		@apply flex cursor-pointer flex-col gap-0.5 rounded-xl border border-slate-300 bg-white p-4 transition select-none hover:border-slate-400 hover:bg-slate-50;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		cursor: pointer;
+		padding: 11px 14px;
+		border: 1px solid var(--border-default);
+		border-radius: var(--radius-md);
+		background: var(--surface-inset);
+		color: var(--text-secondary);
+		user-select: none;
+		transition: var(--transition-colors);
+	}
+	.radio-tile:hover {
+		border-color: var(--border-strong);
 	}
 	.radio-tile:has(input:checked) {
-		@apply border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500;
+		border-color: var(--brand);
+		background: var(--brand-subtle);
+		color: var(--brand);
+	}
+	.v-hint {
+		opacity: 0.75;
 	}
 	.radio-pill:has(input:focus-visible),
 	.radio-tile:has(input:focus-visible) {
-		@apply ring-2 ring-indigo-500 ring-offset-1;
-	}
-
-	.alert-error {
-		@apply rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800;
+		box-shadow: var(--focus-ring);
 	}
 }
 
@@ -69,7 +601,8 @@
 	.no-print {
 		display: none !important;
 	}
+	html,
 	body {
-		background: white;
+		background: #fff !important;
 	}
 }

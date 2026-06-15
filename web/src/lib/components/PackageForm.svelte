@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { formatBaht } from '$lib/format';
+	import Icon from '$lib/components/Icon.svelte';
 	import RadioGroup from '$lib/components/RadioGroup.svelte';
+	import { formatBaht } from '$lib/format';
 	import {
 		RIDER_TYPES,
 		RIDER_TYPE_LABELS,
@@ -53,7 +54,6 @@
 	}));
 	const modalOptions = MODALS.map((m) => ({ value: m, label: MODAL_LABELS[m] }));
 
-	// Keep the term valid when the base plan changes.
 	function onProductChange(code: string) {
 		const p = products.find((x) => x.code === code);
 		if (p && !p.term_options.includes(term)) term = p.term_options[0];
@@ -81,35 +81,41 @@
 	}
 </script>
 
-<form method="POST" data-sveltekit-reload class="card space-y-5 p-6" data-testid="package-form">
-	{#if form?.error}<div class="alert-error">{form.error}</div>{/if}
+<form method="POST" data-sveltekit-reload class="v-card form" data-testid="package-form">
+	{#if form?.error}
+		<div class="v-alert-error">
+			<Icon name="alert-circle" size={18} stroke={2} /><span>{form.error}</span>
+		</div>
+	{/if}
 	<input type="hidden" name="riders" value={ridersJson} />
 
 	<div>
-		<label class="field-label" for="name">Package name</label>
+		<label class="v-label" for="name">Name</label>
 		<input
 			id="name"
 			name="name"
-			class="field-input"
+			class="v-input"
+			placeholder="e.g. Family Protector"
 			value={pkg?.name ?? ''}
 			data-testid="package-name"
 		/>
-		{#if form?.fieldErrors?.name}<p class="field-error">{form.fieldErrors.name}</p>{/if}
+		{#if form?.fieldErrors?.name}<span class="v-field-error">{form.fieldErrors.name}</span>{/if}
 	</div>
 
 	<div>
-		<label class="field-label" for="description">Description</label>
+		<label class="v-label" for="description">Description</label>
 		<input
 			id="description"
 			name="description"
-			class="field-input"
+			class="v-input"
+			placeholder="Optional summary"
 			value={pkg?.description ?? ''}
 			data-testid="package-description"
 		/>
 	</div>
 
 	<div>
-		<span class="field-label">Base life plan</span>
+		<span class="v-label">Base life plan</span>
 		<RadioGroup
 			name="base_product_code"
 			bind:value={baseProduct}
@@ -120,49 +126,56 @@
 		/>
 	</div>
 
-	<div>
-		<label class="field-label" for="default_sum_assured">Default sum insured</label>
-		<input
-			id="default_sum_assured"
-			name="default_sum_assured"
-			type="number"
-			step="50000"
-			class="field-input"
-			value={pkg?.default_sum_assured ?? selectedProduct?.min_sum_assured ?? 1000000}
-			data-testid="package-sum"
-		/>
+	<div class="grid2">
+		<div>
+			<label class="v-label" for="default_sum_assured">Default sum insured</label>
+			<div class="money">
+				<span class="baht">฿</span>
+				<input
+					id="default_sum_assured"
+					name="default_sum_assured"
+					type="number"
+					step="50000"
+					value={pkg?.default_sum_assured ?? selectedProduct?.min_sum_assured ?? 1000000}
+					data-testid="package-sum"
+					data-num
+				/>
+			</div>
+		</div>
+		<div>
+			<span class="v-label">Term</span>
+			<RadioGroup
+				name="term"
+				bind:value={term}
+				options={(selectedProduct?.term_options ?? []).map((t) => ({
+					value: t,
+					label: t >= 99 ? 'Whole life' : `${t} yrs`
+				}))}
+			/>
+		</div>
 	</div>
 
 	<div>
-		<span class="field-label">Term</span>
-		<RadioGroup
-			name="term"
-			bind:value={term}
-			options={(selectedProduct?.term_options ?? []).map((t) => ({
-				value: t,
-				label: t >= 99 ? 'Whole life' : `${t} yrs`
-			}))}
-		/>
-	</div>
-	<div>
-		<span class="field-label">Payment frequency</span>
+		<span class="v-label">Payment frequency</span>
 		<RadioGroup name="modal" bind:value={modal} options={modalOptions} />
 	</div>
 
+	<div class="rule"></div>
+
 	<div>
-		<h3 class="field-label">Riders</h3>
-		<div class="space-y-3">
+		<div class="v-eyebrow" style="margin-bottom:12px;">Riders</div>
+		<div class="riders" data-testid="package-riders">
 			{#each RIDER_TYPES as t (t)}
 				{@const sel = riderSel[t]}
 				{@const plan = sel ? riders.find((r) => r.code === sel.code) : null}
-				<div class="grid grid-cols-2 items-center gap-3">
-					<label class="text-sm text-slate-700" for="pkg-rider-{t}">{RIDER_TYPE_LABELS[t]}</label>
-					<div class="flex gap-2">
+				<div class="rider-row">
+					<span class="rider-label">{RIDER_TYPE_LABELS[t]}</span>
+					<div class="rider-controls">
 						<select
-							id="pkg-rider-{t}"
-							class="field-input bg-white"
+							class="v-input"
 							value={sel?.code ?? ''}
 							onchange={(e) => pick(t, e.currentTarget.value)}
+							data-testid="package-rider-{t}"
 						>
 							<option value="">None</option>
 							{#each ridersByType(t) as p (p.code)}
@@ -171,7 +184,7 @@
 						</select>
 						{#if sel && plan && plan.flat_premium == null}
 							<select
-								class="field-input bg-white"
+								class="v-input"
 								value={sel.sum}
 								onchange={(e) =>
 									(riderSel = {
@@ -190,8 +203,82 @@
 		</div>
 	</div>
 
-	<div class="flex gap-3 pt-2">
-		<button type="submit" class="btn-primary" data-testid="package-submit">{submitLabel}</button>
-		<a href="/packages" class="btn-secondary">Cancel</a>
+	<div class="actions">
+		<a href="/packages" class="v-btn v-btn-secondary">Cancel</a>
+		<button type="submit" class="v-btn v-btn-primary" data-testid="package-submit"
+			>{submitLabel}</button
+		>
 	</div>
 </form>
+
+<style>
+	.form {
+		padding: 24px;
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
+	}
+	.grid2 {
+		display: grid;
+		grid-template-columns: 1fr 1.4fr;
+		gap: 16px;
+	}
+	.money {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		height: var(--control-h-md);
+		padding: 0 14px;
+		background: var(--surface-inset);
+		border: 1px solid var(--border-default);
+		border-radius: var(--radius-md);
+	}
+	.baht {
+		color: var(--text-tertiary);
+	}
+	.money input {
+		flex: 1;
+		min-width: 0;
+		border: none;
+		outline: none;
+		background: transparent;
+		color: var(--text-primary);
+		font-family: var(--font-sans);
+		font-size: var(--text-base);
+	}
+	.rule {
+		height: 1px;
+		background: var(--border-subtle);
+	}
+	.riders {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+	.rider-row {
+		display: grid;
+		grid-template-columns: 1fr 1.4fr;
+		align-items: center;
+		gap: 12px;
+	}
+	.rider-label {
+		font-size: var(--text-sm);
+		font-weight: 500;
+		color: var(--text-secondary);
+	}
+	.rider-controls {
+		display: flex;
+		gap: 8px;
+	}
+	.actions {
+		display: flex;
+		gap: 10px;
+		justify-content: flex-end;
+		margin-top: 6px;
+	}
+	@media (max-width: 600px) {
+		.grid2 {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

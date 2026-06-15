@@ -18,6 +18,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 			packages: packages.length,
 			quotations: quotations.length,
 			illustrated: quotations.filter((q) => q.status === 'illustrated').length
+		},
+		funnel: {
+			new: leads.filter((l) => l.status === 'new').length,
+			contacted: leads.filter((l) => l.status === 'contacted').length,
+			quoted: leads.filter((l) => l.status === 'quoted').length,
+			customer: leads.filter((l) => l.status === 'customer').length
 		}
 	};
 };

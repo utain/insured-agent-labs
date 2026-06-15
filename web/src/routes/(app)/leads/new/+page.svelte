@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
 	import RadioGroup from '$lib/components/RadioGroup.svelte';
 	import { GENDERS } from '$lib/schemas';
 
@@ -13,120 +14,166 @@
 	let gender = $state((form?.values?.gender as string) ?? '');
 </script>
 
-<svelte:head><title>New lead · InsureAgentLabs</title></svelte:head>
+<svelte:head><title>New lead · Vesta AgentSured</title></svelte:head>
 
-<div class="mx-auto max-w-2xl" data-testid="lead-new-page">
-	<a href="/leads" class="text-sm text-slate-500 hover:underline">← Back to leads</a>
-	<h1 data-testid="lead-new-page-title" class="mt-2 mb-6 text-2xl font-bold text-slate-900">
-		New lead
-	</h1>
+<div class="page" data-testid="lead-new-page">
+	<h1 class="v-h1" data-testid="lead-new-page-title">New lead</h1>
+	<p class="v-sub" style="margin:4px 0 22px;">Capture a new prospect's details.</p>
 
-	<form method="POST" data-sveltekit-reload class="card space-y-5 p-6">
+	<form method="POST" data-sveltekit-reload class="v-card form">
 		{#if form?.error}
-			<div class="alert-error" data-testid="lead-form-error">{form.error}</div>
+			<div class="v-alert-error" data-testid="lead-form-error">
+				<Icon name="alert-circle" size={18} stroke={2} />
+				<span>Please fix the highlighted fields below.</span>
+			</div>
 		{/if}
 
 		<div>
-			<label class="field-label" for="full_name">Full name</label>
+			<label class="v-label" for="full_name">Full name</label>
 			<input
 				id="full_name"
 				name="full_name"
-				class="field-input"
+				class="v-input"
+				placeholder="e.g. Somchai Jaidee"
 				value={v('full_name')}
 				data-testid="lead-full-name-input"
 			/>
-			{#if err('full_name')}<p class="field-error" data-testid="lead-full-name-error">
-					{err('full_name')}
-				</p>{/if}
+			{#if err('full_name')}<span class="v-field-error" data-testid="lead-full-name-error"
+					>{err('full_name')}</span
+				>{/if}
 		</div>
 
-		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+		<div class="grid2">
 			<div>
-				<label class="field-label" for="dob">Date of birth</label>
+				<label class="v-label" for="dob">Date of birth</label>
 				<input
 					id="dob"
 					name="dob"
 					type="date"
-					class="field-input"
+					class="v-input"
 					value={v('dob')}
 					data-testid="lead-dob-input"
 				/>
-				{#if err('dob')}<p class="field-error" data-testid="lead-dob-error">{err('dob')}</p>{/if}
+				{#if err('dob')}<span class="v-field-error" data-testid="lead-dob-error">{err('dob')}</span
+					>{/if}
 			</div>
 			<div>
-				<span class="field-label">Gender</span>
-				<RadioGroup
-					name="gender"
-					bind:value={gender}
-					options={genderOptions}
-					testid="lead-gender"
+				<label class="v-label" for="occupation">Occupation</label>
+				<input
+					id="occupation"
+					name="occupation"
+					class="v-input"
+					placeholder="Optional"
+					value={v('occupation')}
+					data-testid="lead-occupation-input"
 				/>
 			</div>
 		</div>
 
 		<div>
-			<label class="field-label" for="occupation"
-				>Occupation <span class="text-slate-400">(for risk)</span></label
-			>
-			<input
-				id="occupation"
-				name="occupation"
-				class="field-input"
-				value={v('occupation')}
-				data-testid="lead-occupation-input"
-			/>
+			<span class="v-label">Gender</span>
+			<RadioGroup name="gender" bind:value={gender} options={genderOptions} testid="lead-gender" />
 		</div>
 
-		<details class="text-sm text-slate-600">
-			<summary class="cursor-pointer font-medium">Optional contact details</summary>
-			<div class="mt-4 space-y-5">
+		<details class="more">
+			<summary>Optional contact details</summary>
+			<div class="more-body">
 				<div>
-					<label class="field-label" for="national_id">National ID</label>
+					<label class="v-label" for="national_id">National ID</label>
 					<input
 						id="national_id"
 						name="national_id"
-						class="field-input"
+						class="v-input"
 						maxlength="13"
 						inputmode="numeric"
 						value={v('national_id')}
 						data-testid="lead-national-id-input"
 					/>
-					{#if err('national_id')}<p class="field-error" data-testid="lead-national-id-error">
-							{err('national_id')}
-						</p>{/if}
+					{#if err('national_id')}<span class="v-field-error" data-testid="lead-national-id-error"
+							>{err('national_id')}</span
+						>{/if}
 				</div>
-				<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+				<div class="grid2">
 					<div>
-						<label class="field-label" for="phone">Phone</label>
+						<label class="v-label" for="phone">Phone</label>
 						<input
 							id="phone"
 							name="phone"
-							class="field-input"
+							class="v-input"
 							value={v('phone')}
 							data-testid="lead-phone-input"
 						/>
 					</div>
 					<div>
-						<label class="field-label" for="email">Email</label>
+						<label class="v-label" for="email">Email</label>
 						<input
 							id="email"
 							name="email"
 							type="email"
-							class="field-input"
+							class="v-input"
 							value={v('email')}
 							data-testid="lead-email-input"
 						/>
-						{#if err('email')}<p class="field-error" data-testid="lead-email-error">
-								{err('email')}
-							</p>{/if}
+						{#if err('email')}<span class="v-field-error" data-testid="lead-email-error"
+								>{err('email')}</span
+							>{/if}
 					</div>
 				</div>
 			</div>
 		</details>
 
-		<div class="flex gap-3 pt-2">
-			<button type="submit" class="btn-primary" data-testid="lead-submit-button">Save lead</button>
-			<a href="/leads" class="btn-secondary" data-testid="lead-cancel-button">Cancel</a>
+		<div class="actions">
+			<a href="/leads" class="v-btn v-btn-secondary" data-testid="lead-cancel-button">Cancel</a>
+			<button type="submit" class="v-btn v-btn-primary" data-testid="lead-submit-button"
+				>Save lead</button
+			>
 		</div>
 	</form>
 </div>
+
+<style>
+	.page {
+		max-width: 620px;
+		margin: 0 auto;
+	}
+	.form {
+		padding: 24px;
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
+	}
+	.grid2 {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 16px;
+	}
+	.more {
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+	}
+	.more summary {
+		cursor: pointer;
+		font-weight: 500;
+		color: var(--text-secondary);
+	}
+	.more summary:hover {
+		color: var(--text-primary);
+	}
+	.more-body {
+		margin-top: 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+	.actions {
+		display: flex;
+		gap: 10px;
+		justify-content: flex-end;
+		margin-top: 4px;
+	}
+	@media (max-width: 600px) {
+		.grid2 {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

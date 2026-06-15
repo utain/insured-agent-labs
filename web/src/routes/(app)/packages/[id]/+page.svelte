@@ -4,11 +4,11 @@
 	let { data, form } = $props();
 </script>
 
-<svelte:head><title>Edit {data.pkg.name} · InsureAgentLabs</title></svelte:head>
+<svelte:head><title>Edit {data.pkg.name} · Vesta AgentSured</title></svelte:head>
 
-<div class="mx-auto max-w-2xl space-y-6" data-testid="package-edit-page">
-	<a href="/packages" class="text-sm text-slate-500 hover:underline">← Back to packages</a>
-	<h1 class="text-2xl font-bold text-slate-900">Edit package</h1>
+<div class="page" data-testid="package-edit-page">
+	<h1 class="v-h1">Edit package</h1>
+	<p class="v-sub" style="margin:4px 0 22px;">Bundle a base plan, coverage defaults, and riders.</p>
 	<PackageForm
 		products={data.products}
 		riders={data.riders}
@@ -17,3 +17,10 @@
 		submitLabel="Save changes"
 	/>
 </div>
+
+<style>
+	.page {
+		max-width: 620px;
+		margin: 0 auto;
+	}
+</style>
