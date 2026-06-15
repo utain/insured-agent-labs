@@ -1,5 +1,5 @@
-import { test, expect, json, bearer, createIllustration } from '../fixtures/api';
-import { PRODUCTS, validLead, validInsured } from '../fixtures/data';
+import { test, expect, json, bearer, createIllustration } from '../../fixtures/api';
+import { PRODUCTS, validLead, validInsured } from '../../fixtures/data';
 
 test.describe('API · quotations & illustration', () => {
 	test('create from a fresh insured, set coverage, recompute premium', async ({

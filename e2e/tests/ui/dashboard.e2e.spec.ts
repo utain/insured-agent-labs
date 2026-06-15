@@ -1,6 +1,6 @@
-import { test, expect, resetState, login } from '../fixtures/pages';
-import { USERS, PRODUCTS } from '../fixtures/data';
-import { createIllustration } from '../fixtures/api';
+import { test, expect, resetState, login } from '../../fixtures/pages';
+import { USERS, PRODUCTS } from '../../fixtures/data';
+import { createIllustration } from '../../fixtures/api';
 
 test.describe('UI · dashboard & leads', () => {
 	test('empty dashboard shows the empty state', async ({ api, page, loginPage, dashboardPage }) => {

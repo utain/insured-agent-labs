@@ -18,7 +18,7 @@ import { WEB_BASE_URL } from './fixtures/env';
  * single-worker / non-parallel to keep state deterministic across specs.
  */
 export default defineConfig({
-  testDir: '.',
+  testDir: './tests',
   globalSetup: './global-setup.ts',
   fullyParallel: false,
   workers: 1,

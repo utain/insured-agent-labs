@@ -1,5 +1,5 @@
-import { test, expect, json, bearer } from '../fixtures/api';
-import { validLead } from '../fixtures/data';
+import { test, expect, json, bearer } from '../../fixtures/api';
+import { validLead } from '../../fixtures/data';
 
 test.describe('API · admin', () => {
 	test('reset restores the deterministic seed', async ({ api, standardToken }) => {

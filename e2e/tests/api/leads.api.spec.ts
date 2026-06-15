@@ -1,5 +1,5 @@
-import { test, expect, json, bearer } from '../fixtures/api';
-import { validLead } from '../fixtures/data';
+import { test, expect, json, bearer } from '../../fixtures/api';
+import { validLead } from '../../fixtures/data';
 
 test.describe('API · leads', () => {
 	test('create → fetch → list', async ({ api, standardToken }) => {

@@ -1,5 +1,5 @@
-import { test, expect } from '../fixtures/pages';
-import { USERS } from '../fixtures/data';
+import { test, expect } from '../../fixtures/pages';
+import { USERS } from '../../fixtures/data';
 
 test.describe('UI · auth', () => {
 	test('standard agent can log in and reach the dashboard', async ({ page, loginPage, header }) => {

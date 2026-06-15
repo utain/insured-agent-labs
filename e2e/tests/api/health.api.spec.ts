@@ -1,4 +1,4 @@
-import { test, expect, json } from '../fixtures/api';
+import { test, expect, json } from '../../fixtures/api';
 
 test.describe('API · health', () => {
   test('GET /api/healthz returns ok', async ({ api }) => {

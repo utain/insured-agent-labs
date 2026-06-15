@@ -33,7 +33,7 @@ product UI — they are consumed directly by test suites / CI via Swagger or cur
 > the guard today is an authenticated `agent.standard` session. The secret-header
 > path exists in the helper but is not yet wired into the handlers (no header is
 > extracted). This is reflected in the tests
-> (`e2e/api/admin.api.spec.ts`) and in [`../DEPLOYMENT.md`](../DEPLOYMENT.md).
+> (`e2e/tests/api/admin.api.spec.ts`) and in [`../DEPLOYMENT.md`](../DEPLOYMENT.md).
 >
 > Consequently, every other scenario user (`agent.locked`, `agent.glitch`,
 > `agent.bug`, `agent.error`) is **forbidden** (`403`) from these endpoints — so a

@@ -1,6 +1,6 @@
-import { test, expect, json, bearer } from '../fixtures/api';
-import { USERS } from '../fixtures/data';
-import { DEMO_PASSWORD } from '../fixtures/env';
+import { test, expect, json, bearer } from '../../fixtures/api';
+import { USERS } from '../../fixtures/data';
+import { DEMO_PASSWORD } from '../../fixtures/env';
 
 test.describe('API · auth', () => {
 	test('login returns a token and the user', async ({ api }) => {

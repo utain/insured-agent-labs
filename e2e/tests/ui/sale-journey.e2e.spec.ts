@@ -1,5 +1,5 @@
-import { test, expect, resetState } from '../fixtures/pages';
-import { USERS, PRODUCTS, validInsured } from '../fixtures/data';
+import { test, expect, resetState } from '../../fixtures/pages';
+import { USERS, PRODUCTS, validInsured } from '../../fixtures/data';
 
 test.describe('UI · sale journey (quotation → illustration)', () => {
 	test.beforeEach(async ({ api }) => {

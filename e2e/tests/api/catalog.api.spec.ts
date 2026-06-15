@@ -1,5 +1,5 @@
-import { test, expect, json, bearer } from '../fixtures/api';
-import { PRODUCTS } from '../fixtures/data';
+import { test, expect, json, bearer } from '../../fixtures/api';
+import { PRODUCTS } from '../../fixtures/data';
 
 test.describe('API · catalog', () => {
 	test('lists 4 life products', async ({ api, standardToken }) => {

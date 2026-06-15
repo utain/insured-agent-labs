@@ -1,6 +1,6 @@
-import { test, expect, json, login, bearer } from '../fixtures/api';
-import { USERS, PRODUCTS, validInsured } from '../fixtures/data';
-import { DEMO_PASSWORD } from '../fixtures/env';
+import { test, expect, json, login, bearer } from '../../fixtures/api';
+import { USERS, PRODUCTS, validInsured } from '../../fixtures/data';
+import { DEMO_PASSWORD } from '../../fixtures/env';
 import type { APIRequestContext } from '@playwright/test';
 
 // The deterministic per-agent behaviours. See docs/TEST-USERS.md.

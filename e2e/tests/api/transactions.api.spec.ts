@@ -1,5 +1,5 @@
-import { test, expect, json, bearer, createIllustration, resetState } from '../fixtures/api';
-import { PRODUCTS, validLead } from '../fixtures/data';
+import { test, expect, json, bearer, createIllustration, resetState } from '../../fixtures/api';
+import { PRODUCTS, validLead } from '../../fixtures/data';
 
 test.describe('API · transactions', () => {
 	test('activity feed records leads, quotations and illustrations', async ({ api }) => {

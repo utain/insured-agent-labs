@@ -6,8 +6,8 @@ service, so the UI and the JSON API share one origin (`BASE_URL`).
 
 | Project | Level | Targets | Files |
 |---|---|---|---|
-| `api` | Integration | JSON API under `/api` **directly** | `api/*.api.spec.ts` |
-| `ui` | End-to-end | The app via a real browser | `ui/*.e2e.spec.ts` |
+| `api` | Integration | JSON API under `/api` **directly** | `tests/api/*.api.spec.ts` |
+| `ui` | End-to-end | The app via a real browser | `tests/ui/*.e2e.spec.ts` |
 
 The `api` project exercises the REST contract; the `ui` project drives real user
 journeys. UI tests that need deterministic state reset via the same `api` fixture.
@@ -59,7 +59,7 @@ reset to seed in a `beforeEach`.
 
 ```
 e2e/
-├── playwright.config.ts     # two projects: api, ui (same BASE_URL)
+├── playwright.config.ts     # two projects: api, ui (same BASE_URL); testDir: ./tests
 ├── global-setup.ts          # waits for /api/healthz + resets to seed
 ├── fixtures/
 │   ├── env.ts               # BASE_URL / API_BASE_URL / WEB_BASE_URL / DEMO_PASSWORD
@@ -67,7 +67,9 @@ e2e/
 │   ├── api.ts               # `api` + `standardToken` fixtures, `json()`, `createIllustration`
 │   └── pages.ts             # `api` test extended with one Page Object per screen
 ├── pages/                   # Page Object Model (UI specs)
-└── api/  ·  ui/             # *.api.spec.ts  ·  *.e2e.spec.ts
+└── tests/
+    ├── api/                 # *.api.spec.ts
+    └── ui/                  # *.e2e.spec.ts
 ```
 
 ### Helpers
