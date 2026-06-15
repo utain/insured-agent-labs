@@ -1,26 +1,26 @@
 # Test Users — InsureAgentLabs
 
-All passwords: `insure_demo`
+All passwords: `insure_demo`. State resets via `POST /api/admin/reset`.
 
-| Username | Scenario flag | Behavior |
-|---|---|---|
-| `agent.standard` | standard | Happy path — all features work normally. |
-| `agent.locked` | locked | Login returns `423 locked`. Cannot reach the app. |
-| `agent.glitch` | glitch | Artificial 3–5s delays on dashboard load, premium calc, e-app submit. |
-| `agent.bug` | bug | Quotation premium inflated ~5%; dead "Save" button on one step; broken image. |
-| `agent.error` | error | Finalize quotation → `500 server_error`; dashboard load may 500. |
+Each agent triggers one deterministic behaviour so QA scenarios are reproducible.
 
-## How the flags manifest
+| Username | Flag | Behaviour | Where it surfaces |
+|---|---|---|---|
+| `agent.standard` | `standard` | Happy path — everything works | baseline for all suites |
+| `agent.locked` | `locked` | Login is rejected | `POST /api/auth/login` → **423 Locked** (no token issued) |
+| `agent.glitch` | `glitch` | Slow premium calculation | `POST /api/quotations/{id}/calculate` sleeps ~3.5s before responding |
+| `agent.bug` | `bug` | Premium defect + broken UI | base premium ×1.05 in calc; **Confirm** button is dead (no-op); illustration thumbnail is a broken image |
+| `agent.error` | `error` | Illustration generation fails | `POST /api/quotations/{id}/illustrate` → **500** (no SI created) |
 
-- **locked** — `POST /api/auth/login` checks `scenario_flag == locked` and returns `423` with `{"error":{"code":"locked", ...}}`. The UI renders `login-error-alert` with the locked message.
-- **glitch** — backend handlers inject `tokio::time::sleep` before responding. Cap is 3–5s so default Playwright timeouts (10s) still pass; trainees learn explicit waits.
-- **bug** — backend returns inflated premium; frontend renders a dead button + broken image. Trainees compare UI vs API to spot the defect.
-- **error** — backend returns `500` on specific operations. UI shows the error toast / inline alert.
+## How to exercise each
 
-## Which tests cover each user
+1. **standard** — log in, create/select a lead, pick a plan or package, set coverage, calculate, confirm → a Sales Illustration is produced.
+2. **locked** — attempt login; assert 423 and that no session is established.
+3. **glitch** — build a quotation and click **Calculate premium**; assert the response/spinner takes >3s. Compare the premium value with `agent.standard` (it should match — only timing differs).
+4. **bug** — for identical inputs, assert the base premium is ~5% higher than `agent.standard`; assert the **Confirm & create illustration** button does nothing when clicked; assert the preview image fails to load.
+5. **error** — build a complete quotation and confirm; assert the illustrate call returns 500 and the user stays on the wizard with an error message.
 
-- `web/tests/auth/login.e2e.ts` — locked alert
-- `web/tests/scenarios/locked.e2e.ts` — full locked-user assertion (Phase 6)
-- `web/tests/scenarios/glitch.e2e.ts` — delay assertions (Phase 6)
-- `web/tests/scenarios/bug.e2e.ts` — premium mismatch + dead button (Phase 6)
-- `web/tests/scenarios/error.e2e.ts` — 500 handling (Phase 6)
+## Notes
+
+- The premium formula is identical for all users; only `agent.bug` inflates the base. See `web/src/lib/server/domain/premium.ts` and its `premium.spec.ts`.
+- Scenario hooks live in the service layer: `services/auth.ts` (locked), `services/quotations.ts` (glitch delay, bug inflation), `services/illustrations.ts` (error 500). The bug UI effects are in `routes/(app)/quotations/[id]/+page.svelte`.

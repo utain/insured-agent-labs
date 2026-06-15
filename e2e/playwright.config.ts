@@ -3,22 +3,19 @@ import { defineConfig, devices } from '@playwright/test';
 import { WEB_BASE_URL } from './fixtures/env';
 
 /**
- * Blackbox test suite for InsureAgentLabs.
+ * Blackbox test suite for InsureAgentLabs (single SvelteKit app).
  *
- * Two Playwright projects:
- *   - `api` : integration-level tests that hit the Rust backend REST API
- *             directly (no browser). Each `*.api.spec.ts` file targets the
- *             backend base URL via the `api` fixture.
- *   - `ui`  : end-to-end tests that drive a real browser against the SvelteKit
- *             web app. Each `*.e2e.spec.ts` file uses `baseURL = WEB_BASE_URL`.
+ * Two Playwright projects, both against the same origin (`BASE_URL`):
+ *   - `api` : integration-level tests that hit the JSON API under `/api`
+ *             directly (no browser), via the `api` fixture.
+ *   - `ui`  : end-to-end tests that drive a real browser against the app.
  *
- * The suite assumes the stack is already running (docker compose, `make up`,
- * or native `make dev-backend` + `make dev-web`). `global-setup.ts` waits for
- * both services to be healthy and fails fast with a clear message otherwise.
+ * The suite assumes the app is already running (`make up` / `make dev`).
+ * `global-setup.ts` waits for `/api/healthz`, resets to the seed, and fails
+ * fast with a clear message otherwise.
  *
- * The backend uses a single shared in-memory store and a GLOBAL
- * `POST /api/admin/reset`, so the suite runs single-worker / non-parallel to
- * keep state deterministic across specs.
+ * The in-memory store + global `POST /api/admin/reset` mean the suite runs
+ * single-worker / non-parallel to keep state deterministic across specs.
  */
 export default defineConfig({
   testDir: '.',
@@ -27,9 +24,7 @@ export default defineConfig({
   workers: 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI
-    ? [['list'], ['html', { open: 'never' }]]
-    : [['list'], ['html', { open: 'never' }]],
+  reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',

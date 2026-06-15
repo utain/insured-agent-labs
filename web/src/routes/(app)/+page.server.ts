@@ -1,17 +1,23 @@
 import type { PageServerLoad } from './$types';
-import { transactionsApi } from '$lib/server/api';
+import { listTransactions } from '$lib/server/services/transactions';
+import { listQuotations } from '$lib/server/services/quotations';
+import { listLeads } from '$lib/server/services/leads';
+import { listPackages } from '$lib/server/services/packages';
 
-export const load: PageServerLoad = async ({ locals, url }) => {
-	const token = locals.apiToken!;
-	const kindParam = url.searchParams.getAll('kind');
-	const statusParam = url.searchParams.getAll('status');
-	const search = url.searchParams.get('search') ?? undefined;
-	const page = Number(url.searchParams.get('page') ?? '1');
-	const tx = await transactionsApi.list(token, {
-		kind: kindParam.length ? (kindParam as never[]) : undefined,
-		status: statusParam.length ? statusParam : undefined,
-		search,
-		page
-	});
-	return { tx, filters: { kind: kindParam, status: statusParam, search: search ?? '', page } };
+export const load: PageServerLoad = async ({ locals }) => {
+	const user = locals.user!;
+	const quotations = listQuotations(user);
+	const leads = listLeads(user);
+	const packages = listPackages(user);
+	const feed = listTransactions(user.id, { pageSize: 8 });
+
+	return {
+		recent: feed.items,
+		stats: {
+			leads: leads.length,
+			packages: packages.length,
+			quotations: quotations.length,
+			illustrated: quotations.filter((q) => q.status === 'illustrated').length
+		}
+	};
 };

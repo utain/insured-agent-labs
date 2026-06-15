@@ -1,7 +1,0 @@
-target
-**/*.rs.bk
-.env
-.env.*
-!.env.example
-Dockerfile
-.dockerignore

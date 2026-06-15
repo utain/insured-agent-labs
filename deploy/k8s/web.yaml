@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: web
     app.kubernetes.io/part-of: insureagentlabs
 spec:
-  replicas: 2 # stateless SSR; safe to scale out.
+  replicas: 1 # in-memory store + sessions live per-pod; do not scale out.
   selector:
     matchLabels:
       app.kubernetes.io/name: web
@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: insureagentlabs-web:latest
+          image: ghcr.io/utain/insureagentlabs-web:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -30,9 +30,6 @@ spec:
               value: "3000"
             - name: NODE_ENV
               value: production
-            # In-cluster DNS name of the backend Service.
-            - name: RUST_API_URL
-              value: http://backend.insureagentlabs.svc.cluster.local:3000
             # Public origin (the Ingress host) — adapter-node validates form
             # POSTs (CSRF) against this. Must match how the browser reaches web.
             - name: ORIGIN

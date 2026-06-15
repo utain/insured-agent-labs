@@ -1,37 +1,34 @@
 # InsureAgentLabs — Blackbox E2E & API Test Suite
 
 A standalone [Playwright](https://playwright.dev) project that tests a **running**
-InsureAgentLabs stack from the outside (blackbox). It has two layers:
+InsureAgentLabs app from the outside (blackbox). The app is a single SvelteKit
+service, so the UI and the JSON API share one origin (`BASE_URL`).
 
 | Project | Level | Targets | Files |
 |---|---|---|---|
-| `api` | Integration | Rust backend REST API **directly** (`API_BASE_URL`, default `:3000`) | `api/*.api.spec.ts` |
-| `ui` | End-to-end | SvelteKit web app via a real browser (`WEB_BASE_URL`, default `:5173`) | `ui/*.e2e.spec.ts` |
+| `api` | Integration | JSON API under `/api` **directly** | `api/*.api.spec.ts` |
+| `ui` | End-to-end | The app via a real browser | `ui/*.e2e.spec.ts` |
 
-Why two layers: the browser never calls `/api/*` (SvelteKit proxies to the backend
-server-side), so the public API surface is the Rust service on `:3000` — which the
-project intentionally exposes for API-QA. The `api` project exercises that contract;
-the `ui` project exercises real user journeys through the browser. UI tests that need
-deterministic state reset the backend directly through the same `api` fixture.
+The `api` project exercises the REST contract; the `ui` project drives real user
+journeys. UI tests that need deterministic state reset via the same `api` fixture.
 
 ## Prerequisites
 
-The suite does **not** start the app — bring a stack up first (see the repo root
+The suite does **not** start the app — bring it up first (see the repo root
 [`docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md)):
 
 ```bash
-# from the repo root — any one of:
-make up                       # docker compose (web :5173, backend :3000)
-# or run natively in two terminals:
-make dev-backend              # :3000
-make dev-web                  # :5173
+# from the repo root:
+make up      # docker compose → http://localhost:5173
+# or native:
+make dev     # pnpm dev → http://localhost:5173
 ```
 
 ## Run
 
 ```bash
 cd e2e
-cp .env.example .env          # optional; defaults target localhost
+cp .env.example .env          # optional; defaults target localhost:5173
 pnpm install
 pnpm install:browsers         # one-time: Playwright Chromium
 
@@ -41,47 +38,50 @@ pnpm test:ui                  # e2e (UI) only
 pnpm report                   # open the last HTML report
 ```
 
-Or from the repo root via the Makefile: `make e2e`, `make e2e-api`, `make e2e-ui`,
-or `make stack-e2e` (compose up → run → down).
+Or from the repo root: `make e2e`, `make e2e-api`, `make e2e-ui`, `make stack-e2e`.
 
 ## Pointing at another environment
 
-Everything is driven by env vars (auto-loaded from `e2e/.env`):
-
 ```bash
-API_BASE_URL=https://staging-api.example.com \
-WEB_BASE_URL=https://staging.example.com \
-pnpm test
+BASE_URL=https://staging.example.com pnpm test
 ```
 
-`global-setup.ts` waits for `${API_BASE_URL}/api/health` and `${WEB_BASE_URL}/login`
-before any test runs, and fails fast with guidance if the stack isn't up.
+`global-setup.ts` waits for `${BASE_URL}/api/healthz`, resets to the seed, and fails
+fast with guidance if the app isn't up.
 
 ## Determinism
 
-The backend uses a single shared **in-memory** store and a **global**
-`POST /api/admin/reset`. The suite therefore runs **single-worker, non-parallel**
-(`workers: 1`, `fullyParallel: false`). Specs that depend on exact counts reset to
-seed state in a `beforeAll`/`beforeEach`; data-creating specs mint unique,
-checksum-valid Thai IDs (`fixtures/data.ts`) so they don't collide.
+The store is **in-memory** with a global `POST /api/admin/reset`. The suite runs
+**single-worker, non-parallel** (`workers: 1`). Specs that depend on exact state
+reset to seed in a `beforeEach`.
 
 ## Layout
 
 ```
 e2e/
-├── playwright.config.ts     # two projects: api, ui
-├── global-setup.ts          # waits for backend + web health
+├── playwright.config.ts     # two projects: api, ui (same BASE_URL)
+├── global-setup.ts          # waits for /api/healthz + resets to seed
 ├── fixtures/
-│   ├── env.ts               # API_BASE_URL / WEB_BASE_URL / DEMO_PASSWORD
-│   ├── data.ts              # seeded users, product codes, Thai-ID helpers
-│   └── api.ts               # `api` request fixture + login/reset/journey helpers
-├── api/                     # *.api.spec.ts — integration (REST contract)
-└── ui/                      # *.e2e.spec.ts — end-to-end (browser journeys)
+│   ├── env.ts               # BASE_URL / API_BASE_URL / WEB_BASE_URL / DEMO_PASSWORD
+│   ├── data.ts              # seeded users, product codes, lead/insured builders
+│   ├── api.ts               # `api` + `standardToken` fixtures, `json()`, `createIllustration`
+│   └── pages.ts             # `api` test extended with one Page Object per screen
+├── pages/                   # Page Object Model (UI specs)
+└── api/  ·  ui/             # *.api.spec.ts  ·  *.e2e.spec.ts
 ```
 
-Each spec links the requirements doc it verifies (see
-[`../docs/requirements/`](../docs/requirements/README.md)).
+### Helpers
 
-> Relationship to `web/tests/*.e2e.ts`: those are the in-repo smoke tests wired to
-> the SvelteKit build. This `e2e/` project is the dedicated, environment-agnostic
-> blackbox suite covering both API and UI; prefer it for integration/e2e coverage.
+- **`standardToken` fixture** — declare `{ api, standardToken }` for an authenticated
+  `agent.standard`, no login boilerplate.
+- **`json(res, status, label?)`** — asserts status and returns the parsed body, with a
+  located failure message.
+- **`createIllustration(api, token, {...})`** — drives insured → plan + coverage →
+  Sales Illustration and returns the ids.
+- **`resetState(api)`** — resets to seed and returns a fresh standard token.
+
+UI journeys follow the Page Object Model (`pages/`), delivered as Playwright fixtures
+(`fixtures/pages.ts`) — a spec names what it needs and Playwright builds it.
+
+> This `e2e/` project is the single blackbox suite (API + UI). The web app keeps only
+> Vitest unit/service tests (`web/ pnpm test`).

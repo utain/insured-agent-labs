@@ -1,1 +1,75 @@
 @import 'tailwindcss';
+
+/* Lightweight design system shared across the product. */
+
+@layer components {
+	.btn,
+	.btn-primary,
+	.btn-secondary,
+	.btn-ghost,
+	.btn-danger {
+		@apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition focus:ring-2 focus:ring-offset-1 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50;
+	}
+	.btn-primary {
+		@apply bg-indigo-600 text-white hover:bg-indigo-500 focus:ring-indigo-500;
+	}
+	.btn-secondary {
+		@apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus:ring-slate-400;
+	}
+	.btn-ghost {
+		@apply text-slate-600 hover:bg-slate-100 focus:ring-slate-300;
+	}
+	.btn-danger {
+		@apply border border-red-200 bg-white text-red-600 hover:bg-red-50 focus:ring-red-400;
+	}
+
+	.card {
+		@apply rounded-xl border border-slate-200 bg-white shadow-sm;
+	}
+
+	.field-label {
+		@apply mb-1 block text-sm font-medium text-slate-700;
+	}
+	.field-input {
+		@apply w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500;
+	}
+	.field-error {
+		@apply mt-1 text-xs text-red-600;
+	}
+
+	.badge {
+		@apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+	}
+
+	/* Modern radio controls — a label wrapping a visually-hidden radio. Selected
+	   state is driven by :has(input:checked), so it works without JS too. */
+	.radio-pill {
+		@apply cursor-pointer rounded-lg border border-slate-300 bg-white px-4 py-2 text-center text-sm font-medium text-slate-700 transition select-none hover:border-slate-400 hover:bg-slate-50;
+	}
+	.radio-pill:has(input:checked) {
+		@apply border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500;
+	}
+	.radio-tile {
+		@apply flex cursor-pointer flex-col gap-0.5 rounded-xl border border-slate-300 bg-white p-4 transition select-none hover:border-slate-400 hover:bg-slate-50;
+	}
+	.radio-tile:has(input:checked) {
+		@apply border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500;
+	}
+	.radio-pill:has(input:focus-visible),
+	.radio-tile:has(input:focus-visible) {
+		@apply ring-2 ring-indigo-500 ring-offset-1;
+	}
+
+	.alert-error {
+		@apply rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800;
+	}
+}
+
+@media print {
+	.no-print {
+		display: none !important;
+	}
+	body {
+		background: white;
+	}
+}

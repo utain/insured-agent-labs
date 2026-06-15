@@ -1,118 +1,81 @@
 <script lang="ts">
-	import { m } from '$lib/paraglide/messages.js';
-	import { getLocale } from '$lib/paraglide/runtime';
-	import type { RiderType } from '$lib/types';
+	import { formatBaht } from '$lib/format';
+	import { RIDER_TYPES, RIDER_TYPE_LABELS } from '$lib/schemas';
 
 	let { data } = $props();
-
-	type Tab = 'all' | RiderType;
-	let activeTab = $state<Tab>('all');
-
-	const tabs: Tab[] = ['all', 'health', 'ci', 'pa', 'tpd', 'wp'];
-
-	const filteredRiders = $derived(
-		activeTab === 'all' ? data.riders : data.riders.filter((r) => r.rider_type === activeTab)
-	);
-
-	const name = (en: string, th: string) => (getLocale() === 'th' ? th : en);
-	const formatBaht = (n: number) => '฿' + n.toLocaleString();
+	let tab = $state<'products' | string>('products');
 </script>
 
-<svelte:head><title>{m['catalog.title']()} · {m['app.title']()}</title></svelte:head>
+<svelte:head><title>Catalog · InsureAgentLabs</title></svelte:head>
 
-<div data-testid="catalog-page">
-	<h1 data-testid="catalog-page-title" class="text-2xl font-bold text-slate-900 mb-6">
-		{m['catalog.title']()}
-	</h1>
+<div data-testid="catalog-page" class="space-y-6">
+	<div>
+		<h1 class="text-2xl font-bold text-slate-900">Product catalog</h1>
+		<p class="mt-1 text-sm text-slate-600">Life base plans and supplementary riders.</p>
+	</div>
 
-	<!-- Base products -->
-	<section class="mb-10">
-		<h2 class="text-lg font-semibold text-slate-800 mb-4" data-testid="catalog-products-heading">
-			{m['catalog.products']()}
-		</h2>
-		<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-			{#each data.products as product (product.code)}
-				<div
-					data-testid="catalog-product-card-{product.code}"
-					class="bg-white rounded-lg border border-slate-200 p-5"
-				>
-					<h3
-						class="text-base font-semibold text-slate-900"
-						data-testid="catalog-product-name-{product.code}"
-					>
-						{name(product.name_en, product.name_th)}
-					</h3>
-					<p class="mt-1 text-sm text-slate-600">
-						{name(product.description_en, product.description_th)}
-					</p>
-					<dl class="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500">
-						<div>
-							<dt>{m['catalog.min_age']()}</dt>
-							<dd class="font-medium text-slate-700">{product.min_age}</dd>
+	<div class="flex flex-wrap gap-2">
+		<button
+			class={tab === 'products' ? 'btn-primary' : 'btn-secondary'}
+			onclick={() => (tab = 'products')}
+		>
+			Life plans
+		</button>
+		{#each RIDER_TYPES as t (t)}
+			<button class={tab === t ? 'btn-primary' : 'btn-secondary'} onclick={() => (tab = t)}>
+				{RIDER_TYPE_LABELS[t]}
+			</button>
+		{/each}
+	</div>
+
+	{#if tab === 'products'}
+		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+			{#each data.products as p (p.code)}
+				<div class="card p-5" data-testid="catalog-product">
+					<h2 class="font-semibold text-slate-900">{p.name}</h2>
+					<p class="mt-1 text-sm text-slate-500">{p.description}</p>
+					<dl class="mt-3 space-y-1 text-xs text-slate-500">
+						<div class="flex justify-between">
+							<dt>Ages</dt>
+							<dd>{p.min_age}–{p.max_age}</dd>
 						</div>
-						<div>
-							<dt>{m['catalog.max_age']()}</dt>
-							<dd class="font-medium text-slate-700">{product.max_age}</dd>
+						<div class="flex justify-between">
+							<dt>Sum insured</dt>
+							<dd>{formatBaht(p.min_sum_assured)} – {formatBaht(p.max_sum_assured)}</dd>
 						</div>
-						<div class="col-span-2">
-							<dt>{m['catalog.sum_assured_range']()}</dt>
-							<dd class="font-medium text-slate-700">
-								{formatBaht(product.min_sum_assured)} – {formatBaht(product.max_sum_assured)}
-							</dd>
+						<div class="flex justify-between">
+							<dt>Terms</dt>
+							<dd>{p.term_options.map((t) => (t >= 99 ? 'WL' : t)).join(', ')}</dd>
 						</div>
 					</dl>
 				</div>
 			{/each}
 		</div>
-	</section>
-
-	<!-- Riders -->
-	<section>
-		<h2 class="text-lg font-semibold text-slate-800 mb-4" data-testid="catalog-riders-heading">
-			{m['catalog.riders']()}
-		</h2>
-
-		<div class="flex flex-wrap gap-2 mb-4" role="tablist" data-testid="catalog-rider-type-filter">
-			{#each tabs as tab (tab)}
-				<button
-					type="button"
-					role="tab"
-					aria-selected={activeTab === tab}
-					data-testid="catalog-rider-type-tab-{tab}"
-					onclick={() => (activeTab = tab)}
-					class="px-3 py-1.5 text-sm rounded-md border transition-colors {activeTab === tab
-						? 'bg-slate-900 text-white border-slate-900'
-						: 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}"
-				>
-					{m[`catalog.rider_type.${tab}`]()}
-				</button>
-			{/each}
-		</div>
-
-		<div
-			class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
-			data-testid="catalog-rider-grid"
-		>
-			{#each filteredRiders as rider (rider.code)}
-				<div
-					data-testid="catalog-rider-card-{rider.code}"
-					class="bg-white rounded-lg border border-slate-200 p-4"
-				>
-					<h3
-						class="text-sm font-semibold text-slate-900"
-						data-testid="catalog-rider-plan-name-{rider.code}"
-					>
-						{name(rider.name_en, rider.name_th)}
-					</h3>
-					<p class="mt-1 text-xs text-slate-500 uppercase tracking-wide">
-						{m[`catalog.rider_type.${rider.rider_type}`]()}
-					</p>
-					<p class="mt-2 text-xs text-slate-600">
-						{m['catalog.sum_assured_range']()}:
-						{rider.sum_assured_options.map((o) => formatBaht(o)).join(', ')}
-					</p>
+	{:else}
+		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+			{#each data.riders.filter((r) => r.rider_type === tab) as r (r.code)}
+				<div class="card p-5" data-testid="catalog-rider">
+					<h2 class="font-semibold text-slate-900">{r.name}</h2>
+					<p class="mt-1 text-sm text-slate-500">{r.description}</p>
+					<dl class="mt-3 space-y-1 text-xs text-slate-500">
+						<div class="flex justify-between">
+							<dt>Ages</dt>
+							<dd>{r.min_age}–{r.max_age}</dd>
+						</div>
+						{#if r.flat_premium != null}
+							<div class="flex justify-between">
+								<dt>Premium</dt>
+								<dd>{formatBaht(r.flat_premium)}/yr (flat)</dd>
+							</div>
+						{:else}
+							<div class="flex justify-between">
+								<dt>Sum insured</dt>
+								<dd>{formatBaht(r.sum_assured_options[0])}+</dd>
+							</div>
+						{/if}
+					</dl>
 				</div>
 			{/each}
 		</div>
-	</section>
+	{/if}
 </div>

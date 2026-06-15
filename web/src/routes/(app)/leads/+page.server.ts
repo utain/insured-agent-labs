@@ -1,8 +1,6 @@
 import type { PageServerLoad } from './$types';
-import { leadsApi } from '$lib/server/api';
+import { listLeads } from '$lib/server/services/leads';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	const token = locals.apiToken!;
-	const leads = await leadsApi.list(token);
-	return { leads };
+	return { leads: listLeads(locals.user!) };
 };

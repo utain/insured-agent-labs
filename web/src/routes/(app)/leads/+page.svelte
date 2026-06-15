@@ -1,58 +1,60 @@
 <script lang="ts">
-	import { m } from '$lib/paraglide/messages.js';
+	import { formatDate, statusBadgeClass } from '$lib/format';
 
 	let { data } = $props();
 </script>
 
-<svelte:head><title>{m['leads.title']()} · {m['app.title']()}</title></svelte:head>
+<svelte:head><title>Leads · InsureAgentLabs</title></svelte:head>
 
-<div data-testid="leads-list-page">
-	<div class="flex items-center justify-between mb-6">
-		<h1 data-testid="leads-list-page-title" class="text-2xl font-bold text-slate-900">
-			{m['leads.title']()}
-		</h1>
-		<a
-			href="/leads/new"
-			data-testid="leads-new-button"
-			class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-		>
-			{m['leads.new']()}
-		</a>
+<div data-testid="leads-list-page" class="space-y-6">
+	<div class="flex items-center justify-between">
+		<div>
+			<h1 data-testid="leads-list-page-title" class="text-2xl font-bold text-slate-900">
+				Leads &amp; customers
+			</h1>
+			<p class="mt-1 text-sm text-slate-600">Everyone in your book of business.</p>
+		</div>
+		<a href="/leads/new" class="btn-primary" data-testid="leads-new-button">New lead</a>
 	</div>
 
 	{#if data.leads.length === 0}
 		<div
 			data-testid="leads-empty-state"
 			role="status"
-			class="text-center py-12 bg-white rounded-xl border border-slate-200"
+			class="card border-dashed p-12 text-center text-slate-500"
 		>
-			<p class="text-slate-500">{m['leads.empty']()}</p>
+			No leads yet. Add your first one.
 		</div>
 	{:else}
-		<div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-			<table data-testid="leads-table" class="w-full">
-				<thead class="bg-slate-50 text-xs text-slate-500 uppercase">
+		<div class="card overflow-hidden">
+			<table data-testid="leads-table" class="w-full text-left text-sm">
+				<thead class="bg-slate-50 text-xs tracking-wide text-slate-500 uppercase">
 					<tr>
-						<th class="px-4 py-3 text-left">{m['leads.full_name.label']()}</th>
-						<th class="px-4 py-3 text-left">{m['leads.phone.label']()}</th>
-						<th class="px-4 py-3 text-left">Status</th>
-						<th class="px-4 py-3"></th>
+						<th class="px-4 py-3">Name</th>
+						<th class="px-4 py-3">Occupation</th>
+						<th class="px-4 py-3">Status</th>
+						<th class="px-4 py-3">Added</th>
+						<th class="px-4 py-3 text-right">Action</th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-slate-100">
 					{#each data.leads as lead (lead.id)}
-						<tr data-testid="leads-table-row-{lead.id}">
-							<td class="px-4 py-3 text-sm text-slate-900">{lead.full_name}</td>
-							<td class="px-4 py-3 text-sm text-slate-600">{lead.phone}</td>
-							<td class="px-4 py-3 text-sm text-slate-600">{lead.status}</td>
+						<tr data-testid="leads-table-row" data-lead-id={lead.id}>
+							<td class="px-4 py-3 font-medium text-slate-900">{lead.full_name}</td>
+							<td class="px-4 py-3 text-slate-600">{lead.occupation ?? '—'}</td>
+							<td class="px-4 py-3">
+								<span class="badge capitalize {statusBadgeClass(lead.status)}">{lead.status}</span>
+							</td>
+							<td class="px-4 py-3 text-slate-500">{formatDate(lead.created_at)}</td>
 							<td class="px-4 py-3 text-right">
-								<a
-									href="/leads/{lead.id}"
-									data-testid="leads-view-button-{lead.id}"
-									class="text-sm text-slate-600 hover:text-slate-900"
-								>
-									View
-								</a>
+								<div class="flex justify-end gap-2">
+									<a href="/leads/{lead.id}" class="btn-secondary px-3 py-1.5 text-xs">View</a>
+									<a
+										href="/quotations/new?leadId={lead.id}"
+										class="btn-primary px-3 py-1.5 text-xs"
+										data-testid="leads-quote-button">Quote</a
+									>
+								</div>
 							</td>
 						</tr>
 					{/each}

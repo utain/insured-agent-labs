@@ -5,12 +5,9 @@ kind: Kustomization
 # Remove with: kubectl delete -k deploy/k8s
 resources:
   - namespace.yaml
-  - backend.yaml
   - web.yaml
   - ingress.yaml
 
 images:
-  - name: insureagentlabs-backend
-    newTag: latest
   - name: insureagentlabs-web
     newTag: latest

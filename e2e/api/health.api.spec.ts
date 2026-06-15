@@ -1,9 +1,8 @@
-import { test, expect } from '../fixtures/api';
+import { test, expect, json } from '../fixtures/api';
 
 test.describe('API · health', () => {
-  test('GET /api/health returns ok', async ({ api }) => {
-    const res = await api.get('/api/health');
-    expect(res.status()).toBe(200);
-    expect(await res.json()).toMatchObject({ status: 'ok' });
+  test('GET /api/healthz returns ok', async ({ api }) => {
+    const res = await api.get('/api/healthz');
+    expect(await json(res, 200)).toMatchObject({ status: 'ok' });
   });
 });

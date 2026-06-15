@@ -1,471 +1,414 @@
 <script lang="ts">
-	import { m } from '$lib/paraglide/messages.js';
-	import { getLocale } from '$lib/paraglide/runtime';
-	import { enhance } from '$app/forms';
-	import type { Modal, RiderSelection } from '$lib/types';
+	import { goto } from '$app/navigation';
+	import { formatBaht } from '$lib/format';
+	import RadioGroup from '$lib/components/RadioGroup.svelte';
+	import {
+		MODAL_FACTORS,
+		MODAL_LABELS,
+		MODALS,
+		RIDER_TYPES,
+		RIDER_TYPE_LABELS,
+		type Modal,
+		type RiderType,
+		type Quotation
+	} from '$lib/schemas';
 
-	type RiderSel = { on: boolean; sumAssured: number };
+	// Per-installment cadence shown on each payment-frequency card.
+	const MODAL_CADENCE: Record<Modal, { unit: string; perYear: string }> = {
+		annual: { unit: '/year', perYear: '1 payment / year' },
+		semi: { unit: '/6 months', perYear: '2 payments / year' },
+		quarterly: { unit: '/quarter', perYear: '4 payments / year' },
+		monthly: { unit: '/month', perYear: '12 payments / year' }
+	};
 
-	let { data, form } = $props();
+	let { data } = $props();
 
-	const quotation = $derived(data.quotation);
-	const product = $derived(data.products.find((p) => p.code === quotation.base_product_code)!);
-	const isFinalized = $derived(quotation.status !== 'draft');
-	const name = (en: string, th: string) => (getLocale() === 'th' ? th : en);
-	const formatBaht = (n: number) => '฿' + n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+	const id = data.quotation.id;
+	const user = $derived(data.user);
+	const isBug = $derived(user?.scenario_flag === 'bug');
 
-	let step = $state(3); // start at riders step (insured+product already chosen)
-	let sumAssured = $state(quotation.sum_assured);
-	let term = $state(quotation.term);
-	let modal = $state<Modal>(quotation.modal);
-	let selectedRiders: Record<string, RiderSel> = $state({});
+	type Sel = { code: string; sum: number };
 
-	// Init rider selections from existing quotation data.
-	$effect(() => {
-		for (const r of quotation.riders as RiderSelection[]) {
-			if (!(r.code in selectedRiders)) {
-				selectedRiders[r.code] = { on: true, sumAssured: r.sum_assured };
-			}
+	function ridersFrom(q: Quotation): Partial<Record<RiderType, Sel>> {
+		const out: Partial<Record<RiderType, Sel>> = {};
+		for (const sel of q.riders) {
+			const plan = data.riders.find((r) => r.code === sel.code);
+			if (plan) out[plan.rider_type] = { code: sel.code, sum: sel.sum_assured };
 		}
-	});
+		return out;
+	}
 
-	const riderTypes = ['health', 'ci', 'pa', 'tpd', 'wp'] as const;
-	let activeRiderTab = $state<(typeof riderTypes)[number]>('health');
-	const activeRiders = $derived(data.riders.filter((r) => r.rider_type === activeRiderTab));
+	let quotation = $state(data.quotation);
+	let calc = $state(data.quotation.calc);
+	let step = $state<'plan' | 'coverage'>(data.quotation.base_product_code ? 'coverage' : 'plan');
 
-	const riderSelections = $derived(
-		Object.entries(selectedRiders)
-			.filter(([, v]) => v.on)
-			.map(([code, v]) => ({ code, sum_assured: v.sumAssured }))
+	let sumAssured = $state(data.quotation.sum_assured || 0);
+	let term = $state(data.quotation.term || 0);
+	let modal = $state<Modal>(data.quotation.modal);
+	let riderSel = $state<Partial<Record<RiderType, Sel>>>(ridersFrom(data.quotation));
+
+	let busy = $state(false);
+	let calculating = $state(false);
+	let errors = $state<Record<string, string>>({});
+	let generalError = $state('');
+
+	const product = $derived(
+		data.products.find((p) => p.code === quotation.base_product_code) ?? null
+	);
+	const ridersByType = (t: RiderType) => data.riders.filter((r) => r.rider_type === t);
+
+	// Payment-frequency cards: show the actual amount due each installment once a
+	// premium has been calculated, otherwise fall back to the payment cadence.
+	const modalChoices = $derived(
+		MODALS.map((m) => {
+			const cadence = MODAL_CADENCE[m];
+			const amount = calc ? calc.total_annual_premium * MODAL_FACTORS[m] : null;
+			return {
+				value: m,
+				label: MODAL_LABELS[m],
+				hint: amount != null ? `${formatBaht(amount)} ${cadence.unit}` : cadence.perYear
+			};
+		})
 	);
 
-	const steps = [3, 4, 5]; // riders → summary → review
-	const stepLabels: Record<number, string> = {
-		1: m['quotation.wizard.step.1'](),
-		2: m['quotation.wizard.step.2'](),
-		3: m['quotation.wizard.step.3'](),
-		4: m['quotation.wizard.step.4'](),
-		5: m['quotation.wizard.step.5']()
-	};
+	function selectedRiders() {
+		return Object.values(riderSel)
+			.filter((s): s is Sel => !!s && !!s.code)
+			.map((s) => ({ code: s.code, sum_assured: s.sum }));
+	}
+
+	function handleErr(json: {
+		error?: { message?: string; fields?: { field: string; message: string }[] };
+	}) {
+		errors = {};
+		generalError = '';
+		for (const f of json.error?.fields ?? []) errors[f.field] = f.message;
+		if (!json.error?.fields?.length) generalError = json.error?.message ?? 'Something went wrong';
+	}
+
+	async function put(body: Record<string, unknown>): Promise<Quotation | null> {
+		busy = true;
+		try {
+			const res = await fetch(`/api/quotations/${id}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(body)
+			});
+			const json = await res.json();
+			if (!res.ok) {
+				handleErr(json);
+				return null;
+			}
+			quotation = json;
+			calc = json.calc;
+			errors = {};
+			generalError = '';
+			return json;
+		} finally {
+			busy = false;
+		}
+	}
+
+	function syncFrom(q: Quotation) {
+		sumAssured = q.sum_assured;
+		term = q.term;
+		modal = q.modal;
+		riderSel = ridersFrom(q);
+	}
+
+	async function selectProduct(code: string) {
+		const j = await put({ base_product_code: code });
+		if (j) {
+			syncFrom(j);
+			step = 'coverage';
+			await recalc();
+		}
+	}
+
+	async function applyPackage(pkgId: string) {
+		const j = await put({ apply_package: pkgId });
+		if (j) {
+			syncFrom(j);
+			step = 'coverage';
+			await recalc();
+		}
+	}
+
+	async function recalc() {
+		const j = await put({
+			base_product_code: quotation.base_product_code,
+			sum_assured: sumAssured,
+			term,
+			modal,
+			riders: selectedRiders()
+		});
+		if (!j) return;
+		// The preview endpoint surfaces the glitch delay for agent.glitch.
+		calculating = true;
+		try {
+			const res = await fetch(`/api/quotations/${id}/calculate`, { method: 'POST' });
+			const json = await res.json();
+			if (res.ok) calc = json;
+			else handleErr(json);
+		} finally {
+			calculating = false;
+		}
+	}
+
+	async function confirm() {
+		generalError = '';
+		const res = await fetch(`/api/quotations/${id}/illustrate`, { method: 'POST' });
+		const json = await res.json();
+		if (res.ok) await goto(`/illustrations/${json.id}`);
+		else handleErr(json);
+	}
+
+	function pickRider(t: RiderType, code: string) {
+		if (!code) {
+			delete riderSel[t];
+			riderSel = { ...riderSel };
+			return;
+		}
+		const plan = data.riders.find((r) => r.code === code)!;
+		const sum = plan.flat_premium != null ? 0 : (plan.sum_assured_options[0] ?? 0);
+		riderSel = { ...riderSel, [t]: { code, sum } };
+	}
 </script>
 
-<svelte:head><title>{m['quotation.title']()} · {m['app.title']()}</title></svelte:head>
+<svelte:head><title>Build quotation · InsureAgentLabs</title></svelte:head>
 
-<div class="max-w-3xl mx-auto" data-testid="quotation-edit-page">
-	<h1 data-testid="quotation-edit-page-title" class="text-2xl font-bold text-slate-900 mb-2">
-		{m['quotation.title']()} — {quotation.insured_name}
-	</h1>
-	<p class="text-sm text-slate-500 mb-6" data-testid="quotation-edit-status">
-		Status: <span class="font-medium uppercase">{quotation.status}</span>
-	</p>
-
-	<!-- Stepper -->
-	<ol data-testid="quotation-stepper" class="flex items-center gap-2 mb-8">
-		{#each steps as s, i (s)}
-			<li class="flex items-center gap-2">
-				<span
-					data-testid="quotation-step-indicator-{s}"
-					aria-current={step === s ? 'step' : undefined}
-					class="flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold {step ===
-					s
-						? 'bg-slate-900 text-white'
-						: step > s
-							? 'bg-green-500 text-white'
-							: 'bg-slate-200 text-slate-500'}"
-				>
-					{s}
-				</span>
-				<span class="text-sm {step === s ? 'text-slate-900 font-medium' : 'text-slate-500'}">
-					{stepLabels[s]}
-				</span>
-				{#if i < steps.length - 1}
-					<span class="w-8 h-px bg-slate-200"></span>
-				{/if}
-			</li>
-		{/each}
-	</ol>
-
-	{#if isFinalized}
-		<!-- Finalized view -->
-		<div class="bg-white border border-slate-200 rounded-xl p-6">
-			<div
-				role="status"
-				data-testid="quotation-finalized-status"
-				class="mb-4 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800"
-			>
-				{m['quotation.step5.finalized']()}
-			</div>
-			<dl class="space-y-2 text-sm">
-				<div class="flex justify-between">
-					<dt class="text-slate-500">{m['quotation.view.total_premium']()}</dt>
-					<dd class="font-semibold" data-testid="quotation-view-total-premium-value">
-						{formatBaht(quotation.calc?.total_annual_premium ?? 0)}
-					</dd>
-				</div>
-				<div class="flex justify-between">
-					<dt class="text-slate-500">{m['quotation.step4.modal']()}</dt>
-					<dd class="font-medium">{m[`quotation.step4.modal.${quotation.modal}`]()}</dd>
-				</div>
-				{#if quotation.valid_until}
-					<div class="flex justify-between">
-						<dt class="text-slate-500">{m['quotation.step5.valid_until']()}</dt>
-						<dd class="font-medium" data-testid="quotation-view-valid-until">
-							{new Date(quotation.valid_until).toLocaleDateString()}
-						</dd>
-					</div>
-				{/if}
-			</dl>
-
-			<div class="mt-6 flex gap-3">
-				<a
-					href="/quotations/{quotation.id}/eapp"
-					data-testid="quotation-view-create-eapp-button"
-					class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-				>
-					{m['quotation.view.create_eapp']()}
-				</a>
-				<a
-					href="/"
-					data-testid="quotation-view-back-button"
-					class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-				>
-					{m['quotation.view.back']()}
-				</a>
-			</div>
+<div class="mx-auto max-w-3xl space-y-6" data-testid="quotation-detail-page">
+	<div class="flex items-center justify-between">
+		<div>
+			<p class="text-sm font-medium text-indigo-600">Step {step === 'plan' ? '2' : '3'} of 3</p>
+			<h1 class="text-2xl font-bold text-slate-900">
+				{quotation.insured_name}
+				<span class="text-base font-normal text-slate-500">· age {quotation.insured_age}</span>
+			</h1>
 		</div>
-	{:else}
-		<!-- ===== Step 3: Riders ===== -->
-		{#if step === 3}
-			<section
-				data-testid="quotation-step3"
-				class="bg-white border border-slate-200 rounded-xl p-6"
-			>
-				<h2 class="text-lg font-semibold text-slate-900 mb-4">
-					{m['quotation.step3.select_riders']()}
-				</h2>
+		<a href="/" class="btn-ghost text-sm">Exit</a>
+	</div>
 
-				<!-- Rider type tabs -->
-				<div class="flex flex-wrap gap-2 mb-4" role="tablist">
-					{#each riderTypes as rt (rt)}
+	{#if generalError}
+		<div class="alert-error" data-testid="quotation-error">{generalError}</div>
+	{/if}
+
+	{#if step === 'plan'}
+		{#if data.packages.length > 0}
+			<section class="space-y-3">
+				<h2 class="text-lg font-semibold text-slate-900">Start from a package</h2>
+				<div class="grid grid-cols-1 gap-3 sm:grid-cols-3" data-testid="package-options">
+					{#each data.packages as pkg (pkg.id)}
 						<button
 							type="button"
-							role="tab"
-							aria-selected={activeRiderTab === rt}
-							data-testid="quotation-step3-rider-type-tab-{rt}"
-							onclick={() => (activeRiderTab = rt)}
-							class="px-3 py-1.5 text-sm rounded-md border transition-colors {activeRiderTab === rt
-								? 'bg-slate-900 text-white border-slate-900'
-								: 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}"
+							onclick={() => applyPackage(pkg.id)}
+							disabled={busy}
+							class="card p-4 text-left transition hover:border-indigo-400 hover:shadow"
+							data-testid="package-option"
 						>
-							{m[`catalog.rider_type.${rt}`]()}
+							<div class="font-semibold text-slate-900">{pkg.name}</div>
+							<p class="mt-1 text-xs text-slate-500">{pkg.description}</p>
+							<div class="mt-2 text-xs font-medium text-indigo-600">
+								{pkg.base_product_code} · {pkg.riders.length} rider{pkg.riders.length === 1
+									? ''
+									: 's'}
+							</div>
 						</button>
 					{/each}
 				</div>
-
-				<!-- Rider plans for active tab -->
-				<div class="space-y-3">
-					{#each activeRiders as rider (rider.code)}
-						{@const sel = selectedRiders[rider.code] ?? {
-							on: false,
-							sumAssured: rider.sum_assured_options[0]
-						}}
-						<label
-							data-testid="quotation-step3-rider-card-{rider.code}"
-							class="flex items-start gap-3 p-3 border border-slate-200 rounded-lg {sel.on
-								? 'bg-slate-50 border-slate-400'
-								: 'bg-white'}"
-						>
-							<input
-								type="checkbox"
-								name="rider_code"
-								value={rider.code}
-								data-testid="quotation-step3-rider-toggle-{rider.code}"
-								checked={sel.on}
-								onchange={(e) => {
-									selectedRiders[rider.code] = {
-										on: (e.currentTarget as HTMLInputElement).checked,
-										sumAssured: sel.sumAssured
-									};
-								}}
-								class="mt-1"
-							/>
-							<div class="flex-1">
-								<p class="text-sm font-medium text-slate-900">
-									{name(rider.name_en, rider.name_th)}
-								</p>
-								{#if sel.on}
-									<div class="mt-2">
-										<label for="rider_sum_{rider.code}" class="text-xs text-slate-500">
-											{m['quotation.step3.rider_sum_assured']()}
-										</label>
-										<select
-											id="rider_sum_{rider.code}"
-											name="rider_sum_{rider.code}"
-											data-testid="quotation-step3-rider-sum-assured-{rider.code}"
-											value={sel.sumAssured}
-											onchange={(e) => {
-												selectedRiders[rider.code] = {
-													on: true,
-													sumAssured: Number((e.currentTarget as HTMLSelectElement).value)
-												};
-											}}
-											class="ml-2 text-sm rounded border border-slate-300 px-2 py-0.5 bg-white"
-										>
-											{#each rider.sum_assured_options as sa (sa)}
-												<option value={sa}>{formatBaht(sa)}</option>
-											{/each}
-										</select>
-									</div>
-								{/if}
-							</div>
-						</label>
-					{/each}
-				</div>
-
-				<p class="mt-4 text-sm text-slate-500" data-testid="quotation-step3-selected-count">
-					{riderSelections.length} rider(s) selected
-				</p>
-
-				<button
-					type="button"
-					data-testid="quotation-next-button"
-					onclick={() => (step = 4)}
-					class="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-				>
-					{m['quotation.wizard.next']()}
-				</button>
 			</section>
 		{/if}
 
-		<!-- ===== Step 4: Summary + calc ===== -->
-		{#if step === 4}
-			<section
-				data-testid="quotation-step4"
-				class="bg-white border border-slate-200 rounded-xl p-6"
-			>
-				<h2 class="text-lg font-semibold text-slate-900 mb-4">
-					{m['quotation.wizard.step.4']()}
-				</h2>
-
-				{#if form?.fieldErrors}
-					{#each Object.entries(form.fieldErrors) as [field, msg] (field)}
-						<div
-							role="alert"
-							data-testid="quotation-step4-error-{field}"
-							class="mb-3 text-sm text-red-600"
-						>
-							{msg}
+		<section class="space-y-3">
+			<h2 class="text-lg font-semibold text-slate-900">Or pick a base life plan</h2>
+			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="product-options">
+				{#each data.products as p (p.code)}
+					<button
+						type="button"
+						onclick={() => selectProduct(p.code)}
+						disabled={busy}
+						class="card p-4 text-left transition hover:border-indigo-400 hover:shadow"
+						data-testid="product-option"
+						data-code={p.code}
+					>
+						<div class="font-semibold text-slate-900">{p.name}</div>
+						<p class="mt-1 text-xs text-slate-500">{p.description}</p>
+						<div class="mt-2 text-xs text-slate-400">
+							{formatBaht(p.min_sum_assured)} – {formatBaht(p.max_sum_assured)}
 						</div>
-					{/each}
-				{/if}
+					</button>
+				{/each}
+			</div>
+		</section>
+	{:else if product}
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
+			<div class="space-y-5 lg:col-span-3">
+				<div class="card p-5">
+					<div class="flex items-center justify-between">
+						<h2 class="text-lg font-semibold text-slate-900">{product.name}</h2>
+						<button
+							type="button"
+							class="text-sm text-indigo-600 hover:underline"
+							onclick={() => (step = 'plan')}>Change plan</button
+						>
+					</div>
 
-				<form method="POST" action="?/update" use:enhance class="space-y-5">
-					<!-- Hidden rider selections for the form post -->
-					{#each riderSelections as rs (rs.code)}
-						<input type="hidden" name="rider_code" value={rs.code} />
-						<input type="hidden" name="rider_sum_{rs.code}" value={rs.sum_assured} />
-					{/each}
-
-					<div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+					<div class="mt-4 space-y-4">
 						<div>
-							<label for="sum_assured" class="block text-sm font-medium text-slate-700 mb-1">
-								{m['quotation.step4.sum_assured']()}
-							</label>
+							<label class="field-label" for="sum">Sum insured</label>
 							<input
-								id="sum_assured"
-								name="sum_assured"
+								id="sum"
 								type="number"
+								class="field-input"
+								bind:value={sumAssured}
 								min={product.min_sum_assured}
 								max={product.max_sum_assured}
 								step="50000"
-								bind:value={sumAssured}
-								data-testid="quotation-step4-sum-assured-input"
-								class="w-full rounded-lg border border-slate-300 px-3 py-2"
+								data-testid="coverage-sum-assured"
+							/>
+							{#if errors.sum_assured}<p class="field-error">{errors.sum_assured}</p>{/if}
+						</div>
+						<div>
+							<span class="field-label">Term</span>
+							<RadioGroup
+								bind:value={term}
+								options={product.term_options.map((t) => ({
+									value: t,
+									label: t >= 99 ? 'Whole life' : `${t} yrs`
+								}))}
+								testid="coverage-term"
+							/>
+							{#if errors.term}<p class="field-error">{errors.term}</p>{/if}
+						</div>
+						<div>
+							<div class="mb-1 flex items-baseline justify-between">
+								<span class="field-label mb-0">Payment frequency</span>
+								<span class="text-xs text-slate-400">
+									{calc ? 'amount shown per payment' : 'calculate to see amounts'}
+								</span>
+							</div>
+							<RadioGroup
+								bind:value={modal}
+								options={modalChoices}
+								variant="tile"
+								columns={2}
+								testid="coverage-modal"
 							/>
 						</div>
-						<div>
-							<label for="term" class="block text-sm font-medium text-slate-700 mb-1">
-								{m['quotation.step4.term']()}
-							</label>
-							<select
-								id="term"
-								name="term"
-								bind:value={term}
-								data-testid="quotation-step4-term-select"
-								class="w-full rounded-lg border border-slate-300 px-3 py-2 bg-white"
-							>
-								{#each product.term_options as t (t)}
-									<option value={t}>{t}</option>
-								{/each}
-							</select>
-						</div>
-						<div>
-							<label for="modal" class="block text-sm font-medium text-slate-700 mb-1">
-								{m['quotation.step4.modal']()}
-							</label>
-							<select
-								id="modal"
-								name="modal"
-								bind:value={modal}
-								data-testid="quotation-step4-modal-select"
-								class="w-full rounded-lg border border-slate-300 px-3 py-2 bg-white"
-							>
-								<option value="annual">{m['quotation.step4.modal.annual']()}</option>
-								<option value="semi">{m['quotation.step4.modal.semi']()}</option>
-								<option value="quarterly">{m['quotation.step4.modal.quarterly']()}</option>
-								<option value="monthly">{m['quotation.step4.modal.monthly']()}</option>
-							</select>
-						</div>
 					</div>
+				</div>
 
-					<!-- Premium preview area -->
-					<div
-						data-testid="quotation-step4-calc-preview"
-						class="rounded-lg bg-slate-50 border border-slate-200 p-4 space-y-2"
-					>
-						<div class="flex justify-between text-sm">
-							<span class="text-slate-600">{m['quotation.step4.base_premium']()}</span>
-							<span
-								class="font-medium"
-								data-testid="quotation-step4-base-premium-value"
-								role="status"
-							>
-								{formatBaht(
-									form?.quotation?.calc?.base_premium ?? quotation.calc?.base_premium ?? 0
-								)}
-							</span>
-						</div>
-						<div class="flex justify-between text-sm">
-							<span class="text-slate-600">{m['quotation.step4.total_premium']()}</span>
-							<span
-								class="font-bold text-lg"
-								data-testid="quotation-step4-total-premium-value"
-								role="status"
-							>
-								{formatBaht(
-									form?.quotation?.calc?.total_annual_premium ??
-										quotation.calc?.total_annual_premium ??
-										0
-								)}
-							</span>
-						</div>
-						<div class="flex justify-between text-sm">
-							<span class="text-slate-600">{m['quotation.step4.modal_premium']()}</span>
-							<span
-								class="font-medium"
-								data-testid="quotation-step4-modal-premium-value"
-								role="status"
-							>
-								{formatBaht(
-									form?.quotation?.calc?.modal_premium ?? quotation.calc?.modal_premium ?? 0
-								)}
-							</span>
-						</div>
+				<div class="card p-5">
+					<h3 class="mb-3 font-semibold text-slate-900">Riders (add-on coverage)</h3>
+					<div class="space-y-3" data-testid="rider-list">
+						{#each RIDER_TYPES as t (t)}
+							{@const sel = riderSel[t]}
+							{@const plan = sel ? data.riders.find((r) => r.code === sel.code) : null}
+							<div class="grid grid-cols-2 items-center gap-3">
+								<label class="text-sm text-slate-700" for="rider-{t}">{RIDER_TYPE_LABELS[t]}</label>
+								<div class="flex gap-2">
+									<select
+										id="rider-{t}"
+										class="field-input bg-white"
+										value={sel?.code ?? ''}
+										onchange={(e) => pickRider(t, e.currentTarget.value)}
+										data-testid="rider-select-{t}"
+									>
+										<option value="">None</option>
+										{#each ridersByType(t) as p (p.code)}
+											<option value={p.code}>{p.name}</option>
+										{/each}
+									</select>
+									{#if sel && plan && plan.flat_premium == null}
+										<select
+											class="field-input bg-white"
+											value={sel.sum}
+											onchange={(e) =>
+												(riderSel = {
+													...riderSel,
+													[t]: { code: sel.code, sum: Number(e.currentTarget.value) }
+												})}
+											data-testid="rider-sum-{t}"
+										>
+											{#each plan.sum_assured_options as opt (opt)}
+												<option value={opt}>{formatBaht(opt)}</option>
+											{/each}
+										</select>
+									{/if}
+								</div>
+							</div>
+						{/each}
 					</div>
+				</div>
 
-					<div class="flex justify-between">
+				<button
+					type="button"
+					class="btn-secondary w-full"
+					onclick={recalc}
+					disabled={busy || calculating}
+					data-testid="recalculate-button"
+					>{calculating ? 'Calculating premium…' : 'Calculate premium'}</button
+				>
+			</div>
+
+			<aside class="lg:col-span-2">
+				<div class="card sticky top-6 p-5" data-testid="premium-summary">
+					<h3 class="font-semibold text-slate-900">Premium</h3>
+					{#if calculating}
+						<p class="mt-4 text-sm text-slate-500" data-testid="premium-loading">Calculating…</p>
+					{:else if calc}
+						<dl class="mt-4 space-y-2 text-sm">
+							<div class="flex justify-between">
+								<dt class="text-slate-500">Base plan</dt>
+								<dd class="font-medium" data-testid="premium-base">
+									{formatBaht(calc.base_premium)}
+								</dd>
+							</div>
+							{#each calc.rider_premiums as rp (rp.code)}
+								<div class="flex justify-between">
+									<dt class="text-slate-500">
+										{data.riders.find((r) => r.code === rp.code)?.name ?? rp.code}
+									</dt>
+									<dd class="font-medium">{formatBaht(rp.premium)}</dd>
+								</div>
+							{/each}
+							<div class="flex justify-between border-t border-slate-200 pt-2">
+								<dt class="font-semibold text-slate-900">Total annual</dt>
+								<dd class="font-bold text-slate-900" data-testid="premium-total">
+									{formatBaht(calc.total_annual_premium)}
+								</dd>
+							</div>
+							<div class="flex justify-between">
+								<dt class="text-slate-500">{MODAL_LABELS[modal]} payment</dt>
+								<dd class="font-medium" data-testid="premium-modal">
+									{formatBaht(calc.modal_premium)}
+								</dd>
+							</div>
+						</dl>
+
+						{#if isBug}
+							<!-- Scenario: broken illustration thumbnail for agent.bug -->
+							<img
+								src="/img/illustration-preview.png"
+								alt="Illustration preview"
+								class="mt-4 h-20 w-full rounded border border-slate-200 object-cover"
+								data-testid="illustration-thumb"
+							/>
+						{/if}
+
 						<button
 							type="button"
-							data-testid="quotation-back-button"
-							onclick={() => (step = 3)}
-							class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+							class="btn-primary mt-5 w-full"
+							onclick={isBug ? undefined : confirm}
+							data-testid="confirm-illustration-button">Confirm &amp; create illustration</button
 						>
-							{m['quotation.wizard.back']()}
-						</button>
-						<button
-							type="submit"
-							data-testid="quotation-step4-recalc-button"
-							class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-						>
-							{m['quotation.step4.recalc']()}
-						</button>
-					</div>
-				</form>
-
-				<div class="mt-4 border-t border-slate-200 pt-4">
-					<button
-						type="button"
-						data-testid="quotation-next-button"
-						onclick={() => (step = 5)}
-						class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-					>
-						{m['quotation.wizard.next']()}
-					</button>
+					{:else}
+						<p class="mt-4 text-sm text-slate-500">
+							Set coverage and calculate to see the premium.
+						</p>
+					{/if}
 				</div>
-			</section>
-		{/if}
-
-		<!-- ===== Step 5: Review ===== -->
-		{#if step === 5}
-			<section
-				data-testid="quotation-step5"
-				class="bg-white border border-slate-200 rounded-xl p-6"
-			>
-				<h2 class="text-lg font-semibold text-slate-900 mb-4">
-					{m['quotation.wizard.step.5']()}
-				</h2>
-
-				<dl class="space-y-2 text-sm mb-6">
-					<div class="flex justify-between">
-						<dt class="text-slate-500">{m['quotation.step4.sum_assured']()}</dt>
-						<dd class="font-medium" data-testid="quotation-step5-sum-assured-value">
-							{formatBaht(sumAssured)}
-						</dd>
-					</div>
-					<div class="flex justify-between">
-						<dt class="text-slate-500">{m['quotation.step4.term']()}</dt>
-						<dd class="font-medium">{term} {m['quotation.step4.term']()}</dd>
-					</div>
-					<div class="flex justify-between">
-						<dt class="text-slate-500">{m['quotation.step4.modal']()}</dt>
-						<dd class="font-medium">{m[`quotation.step4.modal.${modal}`]()}</dd>
-					</div>
-					<div class="flex justify-between">
-						<dt class="text-slate-500">{m['quotation.view.total_premium']()}</dt>
-						<dd
-							class="font-bold text-lg"
-							data-testid="quotation-step5-total-premium-value"
-							role="status"
-						>
-							{formatBaht(
-								form?.quotation?.calc?.total_annual_premium ??
-									quotation.calc?.total_annual_premium ??
-									0
-							)}
-						</dd>
-					</div>
-				</dl>
-
-				{#if form?.error}
-					<div
-						role="alert"
-						data-testid="quotation-step5-error-alert"
-						class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800"
-					>
-						{m['quotation.error.server']()}
-					</div>
-				{/if}
-
-				<div class="flex justify-between">
-					<button
-						type="button"
-						data-testid="quotation-back-button"
-						onclick={() => (step = 4)}
-						class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-					>
-						{m['quotation.wizard.back']()}
-					</button>
-					<form method="POST" action="?/finalize" use:enhance>
-						<button
-							type="submit"
-							data-testid="quotation-step5-finalize-button"
-							class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-						>
-							{m['quotation.step5.finalize']()}
-						</button>
-					</form>
-				</div>
-			</section>
-		{/if}
+			</aside>
+		</div>
 	{/if}
 </div>

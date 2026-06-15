@@ -1,65 +1,47 @@
-import { test, expect, login, bearer } from '../fixtures/api';
-import { USERS, PRODUCTS } from '../fixtures/data';
+import { test, expect, json, bearer } from '../fixtures/api';
+import { PRODUCTS } from '../fixtures/data';
 
-// Spec: docs/requirements/02-catalog.md
 test.describe('API · catalog', () => {
-  let token: string;
-  test.beforeAll(async ({ playwright }) => {
-    const ctx = await playwright.request.newContext({
-      baseURL: process.env.API_BASE_URL ?? 'http://localhost:3000'
-    });
-    token = await login(ctx, USERS.standard);
-    await ctx.dispose();
-  });
+	test('lists 4 life products', async ({ api, standardToken }) => {
+		const products = await json(
+			await api.get('/api/catalog/products', { headers: bearer(standardToken) }),
+			200
+		);
+		expect(products).toHaveLength(4);
+		expect(products.map((p: any) => p.code)).toContain(PRODUCTS.term);
+	});
 
-  test('requires authentication', async ({ api }) => {
-    const res = await api.get('/api/catalog/products');
-    expect(res.status()).toBe(401);
-  });
+	test('gets a single product', async ({ api, standardToken }) => {
+		const p = await json(
+			await api.get(`/api/catalog/products/${PRODUCTS.term}`, { headers: bearer(standardToken) }),
+			200
+		);
+		expect(p.code).toBe(PRODUCTS.term);
+		expect(p.term_options.length).toBeGreaterThan(0);
+	});
 
-  test('lists the four seeded base products', async ({ api }) => {
-    const res = await api.get('/api/catalog/products', { headers: bearer(token) });
-    expect(res.status()).toBe(200);
-    const products = await res.json();
-    const codes = products.map((p: { code: string }) => p.code).sort();
-    expect(codes).toEqual(
-      [PRODUCTS.endow, PRODUCTS.term, PRODUCTS.ulip, PRODUCTS.whole].sort()
-    );
-  });
+	test('unknown product is 404', async ({ api, standardToken }) => {
+		expect(
+			(await api.get('/api/catalog/products/NOPE', { headers: bearer(standardToken) })).status()
+		).toBe(404);
+	});
 
-  test('gets a product by code; unknown code → 404', async ({ api }) => {
-    const ok = await api.get(`/api/catalog/products/${PRODUCTS.term}`, {
-      headers: bearer(token)
-    });
-    expect(ok.status()).toBe(200);
-    expect((await ok.json()).code).toBe(PRODUCTS.term);
+	test('lists all 27 riders and filters by type', async ({ api, standardToken }) => {
+		const all = await json(
+			await api.get('/api/catalog/riders', { headers: bearer(standardToken) }),
+			200
+		);
+		expect(all).toHaveLength(27);
 
-    const missing = await api.get('/api/catalog/products/NOPE', { headers: bearer(token) });
-    expect(missing.status()).toBe(404);
-    expect((await missing.json()).error.code).toBe('not_found');
-  });
+		const health = await json(
+			await api.get('/api/catalog/riders?type=health', { headers: bearer(standardToken) }),
+			200
+		);
+		expect(health.length).toBe(5);
+		expect(health.every((r: any) => r.rider_type === 'health')).toBe(true);
+	});
 
-  test('filters riders by type', async ({ api }) => {
-    const res = await api.get('/api/catalog/riders', {
-      headers: bearer(token),
-      params: { type: 'ci' }
-    });
-    expect(res.status()).toBe(200);
-    const riders = await res.json();
-    expect(riders.length).toBeGreaterThan(0);
-    expect(riders.every((r: { rider_type: string }) => r.rider_type === 'ci')).toBeTruthy();
-  });
-
-  test('unfiltered rider list returns all types', async ({ api }) => {
-    const res = await api.get('/api/catalog/riders', { headers: bearer(token) });
-    expect(res.status()).toBe(200);
-    const types = new Set((await res.json()).map((r: { rider_type: string }) => r.rider_type));
-    // health, ci, pa, tpd, wp
-    expect(types.size).toBeGreaterThanOrEqual(5);
-  });
-
-  test('unknown rider code → 404', async ({ api }) => {
-    const res = await api.get('/api/catalog/riders/NOPE', { headers: bearer(token) });
-    expect(res.status()).toBe(404);
-  });
+	test('catalog requires auth', async ({ api }) => {
+		expect((await api.get('/api/catalog/products')).status()).toBe(401);
+	});
 });

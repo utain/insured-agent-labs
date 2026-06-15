@@ -1,7 +1,7 @@
 export const SESSION_COOKIE = 'session';
 
-/** Routes that don't require authentication. Locale prefixes are stripped before matching. */
-export const PUBLIC_PATHS = ['/login'];
+/** Page routes that don't require authentication. (API routes enforce their own auth.) */
+export const PUBLIC_PATHS = ['/login', '/api-docs'];
 
-/** Status endpoint for checks. */
-export const HEALTH_PATH = '/api/health';
+/** Liveness endpoint. */
+export const HEALTH_PATH = '/api/healthz';

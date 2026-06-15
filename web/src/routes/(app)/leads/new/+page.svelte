@@ -1,220 +1,132 @@
 <script lang="ts">
-	import { m } from '$lib/paraglide/messages.js';
+	import RadioGroup from '$lib/components/RadioGroup.svelte';
+	import { GENDERS } from '$lib/schemas';
 
 	let { form } = $props();
+	const err = (k: string) => form?.fieldErrors?.[k] as string | undefined;
+	const v = (k: string) => (form?.values?.[k] ?? '') as string;
 
-	const fieldError = (key: string) => form?.fieldErrors?.[key];
-	const hasErr = (key: string) => Boolean(fieldError(key));
-	const messages = m as unknown as Record<string, (p?: Record<string, string>) => string>;
-	const msg = (key: string) => messages[key]?.({});
-
-	const v = (key: string) => (form?.values?.[key as keyof typeof form.values] ?? '') as string;
-
-	const baseInput =
-		'w-full rounded-lg border px-3 py-2 text-slate-900 focus:outline-none focus:ring-1';
-	const okBorder = 'border-slate-300 focus:border-slate-500 focus:ring-slate-500';
-	const errBorder = 'border-red-400 focus:border-red-500 focus:ring-red-500';
+	const genderOptions = GENDERS.map((g) => ({
+		value: g as string,
+		label: g[0].toUpperCase() + g.slice(1)
+	}));
+	let gender = $state((form?.values?.gender as string) ?? '');
 </script>
 
-<svelte:head><title>{m['leads.new']()} · {m['app.title']()}</title></svelte:head>
+<svelte:head><title>New lead · InsureAgentLabs</title></svelte:head>
 
-<div class="max-w-2xl mx-auto" data-testid="lead-new-page">
-	<h1 data-testid="lead-new-page-title" class="text-2xl font-bold text-slate-900 mb-6">
-		{m['leads.new']()}
+<div class="mx-auto max-w-2xl" data-testid="lead-new-page">
+	<a href="/leads" class="text-sm text-slate-500 hover:underline">← Back to leads</a>
+	<h1 data-testid="lead-new-page-title" class="mt-2 mb-6 text-2xl font-bold text-slate-900">
+		New lead
 	</h1>
 
-	<form
-		method="POST"
-		data-sveltekit-reload
-		class="space-y-5 bg-white border border-slate-200 rounded-xl p-6"
-	>
-		<!-- Full name -->
+	<form method="POST" data-sveltekit-reload class="card space-y-5 p-6">
+		{#if form?.error}
+			<div class="alert-error" data-testid="lead-form-error">{form.error}</div>
+		{/if}
+
 		<div>
-			<label for="full_name" class="block text-sm font-medium text-slate-700 mb-1">
-				{m['leads.full_name.label']()}
-			</label>
+			<label class="field-label" for="full_name">Full name</label>
 			<input
 				id="full_name"
 				name="full_name"
-				type="text"
+				class="field-input"
 				value={v('full_name')}
-				placeholder={m['leads.full_name.placeholder']()}
-				aria-required="true"
-				aria-invalid={hasErr('full_name')}
 				data-testid="lead-full-name-input"
-				class="{baseInput} {hasErr('full_name') ? errBorder : okBorder}"
 			/>
-			{#if hasErr('full_name')}
-				<p role="alert" data-testid="lead-full-name-error" class="mt-1 text-sm text-red-600">
-					{msg(fieldError('full_name')!)}
-				</p>
-			{/if}
+			{#if err('full_name')}<p class="field-error" data-testid="lead-full-name-error">
+					{err('full_name')}
+				</p>{/if}
 		</div>
 
-		<!-- National ID -->
-		<div>
-			<label for="national_id" class="block text-sm font-medium text-slate-700 mb-1">
-				{m['leads.national_id.label']()}
-			</label>
-			<input
-				id="national_id"
-				name="national_id"
-				type="text"
-				inputmode="numeric"
-				pattern="[0-9]{13}"
-				maxlength="13"
-				value={v('national_id')}
-				placeholder={m['leads.national_id.placeholder']()}
-				aria-required="true"
-				aria-invalid={hasErr('national_id')}
-				data-testid="lead-national-id-input"
-				class="{baseInput} {hasErr('national_id') ? errBorder : okBorder}"
-			/>
-			{#if hasErr('national_id')}
-				<p role="alert" data-testid="lead-national-id-error" class="mt-1 text-sm text-red-600">
-					{msg(fieldError('national_id')!)}
-				</p>
-			{/if}
-		</div>
-
-		<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-			<!-- DOB -->
+		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
 			<div>
-				<label for="dob" class="block text-sm font-medium text-slate-700 mb-1">
-					{m['leads.dob.label']()}
-				</label>
+				<label class="field-label" for="dob">Date of birth</label>
 				<input
 					id="dob"
 					name="dob"
 					type="date"
+					class="field-input"
 					value={v('dob')}
-					aria-required="true"
-					aria-invalid={hasErr('dob')}
 					data-testid="lead-dob-input"
-					class="{baseInput} {hasErr('dob') ? errBorder : okBorder}"
 				/>
-				{#if hasErr('dob')}
-					<p role="alert" data-testid="lead-dob-error" class="mt-1 text-sm text-red-600">
-						{msg(fieldError('dob')!)}
-					</p>
-				{/if}
+				{#if err('dob')}<p class="field-error" data-testid="lead-dob-error">{err('dob')}</p>{/if}
 			</div>
-
-			<!-- Gender -->
 			<div>
-				<label for="gender" class="block text-sm font-medium text-slate-700 mb-1">
-					{m['leads.gender.label']()}
-				</label>
-				<select
-					id="gender"
+				<span class="field-label">Gender</span>
+				<RadioGroup
 					name="gender"
-					value={v('gender')}
-					aria-required="true"
-					data-testid="lead-gender-select"
-					class="{baseInput} {okBorder} bg-white"
-				>
-					<option value="">—</option>
-					<option value="male">{m['leads.gender.male']()}</option>
-					<option value="female">{m['leads.gender.female']()}</option>
-					<option value="other">{m['leads.gender.other']()}</option>
-				</select>
-			</div>
-		</div>
-
-		<!-- Phone -->
-		<div>
-			<label for="phone" class="block text-sm font-medium text-slate-700 mb-1">
-				{m['leads.phone.label']()}
-			</label>
-			<input
-				id="phone"
-				name="phone"
-				type="tel"
-				inputmode="numeric"
-				value={v('phone')}
-				placeholder={m['leads.phone.placeholder']()}
-				aria-required="true"
-				aria-invalid={hasErr('phone')}
-				data-testid="lead-phone-input"
-				class="{baseInput} {hasErr('phone') ? errBorder : okBorder}"
-			/>
-			{#if hasErr('phone')}
-				<p role="alert" data-testid="lead-phone-error" class="mt-1 text-sm text-red-600">
-					{msg(fieldError('phone')!)}
-				</p>
-			{/if}
-		</div>
-
-		<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-			<!-- Email -->
-			<div>
-				<label for="email" class="block text-sm font-medium text-slate-700 mb-1">
-					{m['leads.email.label']()}
-				</label>
-				<input
-					id="email"
-					name="email"
-					type="email"
-					value={v('email')}
-					aria-invalid={hasErr('email')}
-					data-testid="lead-email-input"
-					class="{baseInput} {hasErr('email') ? errBorder : okBorder}"
-				/>
-				{#if hasErr('email')}
-					<p role="alert" data-testid="lead-email-error" class="mt-1 text-sm text-red-600">
-						{msg(fieldError('email')!)}
-					</p>
-				{/if}
-			</div>
-
-			<!-- Occupation -->
-			<div>
-				<label for="occupation" class="block text-sm font-medium text-slate-700 mb-1">
-					{m['leads.occupation.label']()}
-				</label>
-				<input
-					id="occupation"
-					name="occupation"
-					type="text"
-					value={v('occupation')}
-					data-testid="lead-occupation-input"
-					class="{baseInput} {okBorder}"
+					bind:value={gender}
+					options={genderOptions}
+					testid="lead-gender"
 				/>
 			</div>
 		</div>
 
-		<!-- Income -->
 		<div>
-			<label for="income" class="block text-sm font-medium text-slate-700 mb-1">
-				{m['leads.income.label']()}
-			</label>
+			<label class="field-label" for="occupation"
+				>Occupation <span class="text-slate-400">(for risk)</span></label
+			>
 			<input
-				id="income"
-				name="income"
-				type="number"
-				min="0"
-				step="1000"
-				value={v('income')}
-				data-testid="lead-income-input"
-				class="{baseInput} {okBorder}"
+				id="occupation"
+				name="occupation"
+				class="field-input"
+				value={v('occupation')}
+				data-testid="lead-occupation-input"
 			/>
 		</div>
+
+		<details class="text-sm text-slate-600">
+			<summary class="cursor-pointer font-medium">Optional contact details</summary>
+			<div class="mt-4 space-y-5">
+				<div>
+					<label class="field-label" for="national_id">National ID</label>
+					<input
+						id="national_id"
+						name="national_id"
+						class="field-input"
+						maxlength="13"
+						inputmode="numeric"
+						value={v('national_id')}
+						data-testid="lead-national-id-input"
+					/>
+					{#if err('national_id')}<p class="field-error" data-testid="lead-national-id-error">
+							{err('national_id')}
+						</p>{/if}
+				</div>
+				<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+					<div>
+						<label class="field-label" for="phone">Phone</label>
+						<input
+							id="phone"
+							name="phone"
+							class="field-input"
+							value={v('phone')}
+							data-testid="lead-phone-input"
+						/>
+					</div>
+					<div>
+						<label class="field-label" for="email">Email</label>
+						<input
+							id="email"
+							name="email"
+							type="email"
+							class="field-input"
+							value={v('email')}
+							data-testid="lead-email-input"
+						/>
+						{#if err('email')}<p class="field-error" data-testid="lead-email-error">
+								{err('email')}
+							</p>{/if}
+					</div>
+				</div>
+			</div>
+		</details>
 
 		<div class="flex gap-3 pt-2">
-			<button
-				type="submit"
-				data-testid="lead-submit-button"
-				class="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800"
-			>
-				{m['leads.submit']()}
-			</button>
-			<a
-				href="/"
-				data-testid="lead-cancel-button"
-				class="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50"
-			>
-				{m['leads.cancel']()}
-			</a>
+			<button type="submit" class="btn-primary" data-testid="lead-submit-button">Save lead</button>
+			<a href="/leads" class="btn-secondary" data-testid="lead-cancel-button">Cancel</a>
 		</div>
 	</form>
 </div>

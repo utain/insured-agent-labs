@@ -1,42 +1,18 @@
-# sv
+# InsureAgentLabs — web app
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+The single SvelteKit application (UI + JSON API + Swagger) for InsureAgentLabs.
+See the repository root [`README.md`](../README.md) for the full overview, and
+[`docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md) for deployment.
 
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
-
-```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
+## Commands
 
 ```sh
-# recreate this project
-pnpm dlx sv@0.16.1 create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" playwright tailwindcss="plugins:none" sveltekit-adapter="adapter:node" paraglide="languageTags:en,th+demo:no" experimental="versions:kit+features:async,remoteFunctions,explicitEnvironmentVariables,handleRenderingErrors,forkPreloads" --install pnpm .
+pnpm install
+pnpm dev      # dev server → http://localhost:5173 (Swagger: /api-docs)
+pnpm check    # svelte-check
+pnpm lint     # prettier + eslint
+pnpm test     # vitest (domain/service unit tests)
+pnpm build    # production build (adapter-node → ./build)
 ```
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Run the production build with `node build` (set `ORIGIN` to the public URL).

@@ -1,11 +1,6 @@
 import type { PageServerLoad } from './$types';
-import { catalogApi } from '$lib/server/api';
+import { listProducts, listRiders } from '$lib/server/services/catalog';
 
-export const load: PageServerLoad = async ({ locals }) => {
-	const token = locals.apiToken!;
-	const [products, riders] = await Promise.all([
-		catalogApi.products(token),
-		catalogApi.riders(token)
-	]);
-	return { products, riders };
+export const load: PageServerLoad = async () => {
+	return { products: listProducts(), riders: listRiders() };
 };

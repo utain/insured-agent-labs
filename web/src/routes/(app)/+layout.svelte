@@ -1,90 +1,96 @@
 <script lang="ts">
-	import { m } from '$lib/paraglide/messages.js';
-	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
-	import type { Pathname } from '$app/types';
-	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
+	import { invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
+	import { SCENARIO_BADGE } from '$lib/format';
 
 	let { data, children } = $props();
-
 	const user = $derived(data.user);
-	const displayName = $derived(
-		getLocale() === 'th' ? user?.display_name_th : user?.display_name_en
-	);
 
-	async function switchLocale(newLocale: 'en' | 'th') {
-		const path = localizeHref(page.url.pathname, { locale: newLocale }) as Pathname;
-		await goto(resolve(path));
+	const nav = [
+		{ href: '/', label: 'Dashboard', testid: 'nav-dashboard-link' },
+		{ href: '/leads', label: 'Leads', testid: 'nav-leads-link' },
+		{ href: '/packages', label: 'Packages', testid: 'nav-packages-link' },
+		{ href: '/catalog', label: 'Catalog', testid: 'nav-catalog-link' }
+	];
+
+	function isActive(href: string): boolean {
+		return href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);
+	}
+
+	let resetting = $state(false);
+	async function resetData() {
+		resetting = true;
+		await fetch('/api/admin/reset', { method: 'POST' });
+		await invalidateAll();
+		resetting = false;
 	}
 </script>
 
 <div class="min-h-screen bg-slate-50">
-	<header data-testid="app-header" class="bg-white border-b border-slate-200">
-		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-			<div class="flex items-center justify-between h-14">
+	<header data-testid="app-header" class="border-b border-slate-200 bg-white">
+		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+			<div class="flex h-14 items-center justify-between">
 				<div class="flex items-center gap-6">
-					<a href="/" class="text-lg font-bold text-slate-900" data-testid="header-app-title">
-						{m['app.title']()}
+					<a href="/" class="flex items-center gap-2" data-testid="header-app-title">
+						<span
+							class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold text-white"
+							>IA</span
+						>
+						<span class="font-bold text-slate-900">InsureAgentLabs</span>
 					</a>
-					<nav data-testid="app-nav" class="flex items-center gap-4">
-						<a
-							href="/"
-							class="text-sm text-slate-600 hover:text-slate-900"
-							data-testid="nav-dashboard-link"
-						>
-							{m['nav.dashboard']()}
-						</a>
-						<a
-							href="/leads"
-							class="text-sm text-slate-600 hover:text-slate-900"
-							data-testid="nav-leads-link"
-						>
-							{m['nav.leads']()}
-						</a>
-						<a
-							href="/catalog"
-							class="text-sm text-slate-600 hover:text-slate-900"
-							data-testid="nav-catalog-link"
-						>
-							{m['nav.catalog']()}
-						</a>
+					<nav data-testid="app-nav" class="hidden items-center gap-1 md:flex">
+						{#each nav as item (item.href)}
+							<a
+								href={item.href}
+								data-testid={item.testid}
+								class="rounded-md px-3 py-1.5 text-sm font-medium transition {isActive(item.href)
+									? 'bg-indigo-50 text-indigo-700'
+									: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}">{item.label}</a
+							>
+						{/each}
 					</nav>
 				</div>
-				<div class="flex items-center gap-4">
-					<div class="flex items-center gap-2">
-						<label for="lang-select" class="sr-only">{m['nav.language']()}</label>
-						<select
-							id="lang-select"
-							data-testid="lang-select"
-							value={getLocale()}
-							onchange={(e) =>
-								switchLocale((e.currentTarget as HTMLSelectElement).value as 'en' | 'th')}
-							class="text-sm rounded-md border border-slate-300 px-2 py-1 text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-slate-500"
-						>
-							<option value="en" data-testid="lang-option-en">{m['nav.language.en']()}</option>
-							<option value="th" data-testid="lang-option-th">{m['nav.language.th']()}</option>
-						</select>
-					</div>
-					<span class="text-sm text-slate-700" data-testid="header-user-name">
-						{displayName}
-					</span>
+
+				<div class="flex items-center gap-3">
+					<a
+						href="/quotations/new"
+						class="btn-primary hidden sm:inline-flex"
+						data-testid="nav-new-quotation">New Quotation</a
+					>
+					<button
+						type="button"
+						onclick={resetData}
+						disabled={resetting}
+						class="btn-ghost text-xs"
+						title="Reset all data to the seeded baseline"
+						data-testid="reset-data-button">{resetting ? 'Resetting…' : 'Reset'}</button
+					>
+					{#if user}
+						<div class="flex items-center gap-2 border-l border-slate-200 pl-3">
+							<div class="text-right">
+								<div class="text-sm font-medium text-slate-800" data-testid="header-user-name">
+									{user.display_name}
+								</div>
+								<div class="text-xs text-slate-400">{user.username}</div>
+							</div>
+							<span
+								class="badge {SCENARIO_BADGE[user.scenario_flag].class}"
+								data-testid="header-scenario-badge">{SCENARIO_BADGE[user.scenario_flag].label}</span
+							>
+						</div>
+					{/if}
 					<form method="POST" action="/logout" use:enhance>
-						<button
-							type="submit"
-							data-testid="header-logout-button"
-							class="text-sm text-slate-600 hover:text-red-600 transition-colors"
+						<button type="submit" class="btn-ghost text-sm" data-testid="header-logout-button"
+							>Sign out</button
 						>
-							{m['nav.logout']()}
-						</button>
 					</form>
 				</div>
 			</div>
 		</div>
 	</header>
 
-	<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+	<main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 		{@render children()}
 	</main>
 </div>

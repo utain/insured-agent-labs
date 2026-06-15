@@ -1,52 +1,37 @@
-# InsureAgentLabs — full-stack local/CI deployment.
+# InsureAgentLabs — single SvelteKit app (full-stack, in-memory store).
 #
-#   docker compose up --build        # build + run backend + web
-#   docker compose down -v           # stop + remove
+#   docker compose up --build        # build + run the app
+#   docker compose down              # stop
 #
-# Service URLs on the host:
-#   web      → http://localhost:5173
-#   backend  → http://localhost:3000        (Swagger: /api-docs)
+# Service URL on the host:
+#   web → http://localhost:5173   (UI, API under /api, Swagger at /api-docs)
 #
-# The web container talks to the backend over the compose network at
-# http://backend:3000 (RUST_API_URL); the browser only ever talks to web.
+# State is in-memory and resets on restart or via POST /api/admin/reset.
 
 services:
-  backend:
-    build:
-      context: ./backend
-    image: insureagentlabs-backend:latest
-    environment:
-      RUST_LOG: ${RUST_LOG:-info}
-      PORT: "3000"
-      ADMIN_SECRET: ${ADMIN_SECRET:-dev-admin-secret}
-      # The backend's CORS predicate also always allows http://localhost*,
-      # so the host-mapped web origin works out of the box.
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
-    ports:
-      - "${BACKEND_PORT:-3000}:3000"
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/health"]
-      interval: 10s
-      timeout: 3s
-      retries: 12
-      start_period: 10s
-    restart: unless-stopped
-
   web:
     build:
       context: ./web
-    image: insureagentlabs-web:latest
+    image: ghcr.io/utain/insureagentlabs-web:latest
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: "3000"
-      RUST_API_URL: http://backend:3000
-      # adapter-node needs its public origin to accept form POSTs (CSRF check).
-      # Must match the URL the browser uses to reach the web app.
+      # adapter-node validates form POST origins (CSRF). Must match the
+      # browser-facing URL below.
       ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
     ports:
       - "${WEB_PORT:-5173}:3000"
-    depends_on:
-      backend:
-        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/api/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
     restart: unless-stopped

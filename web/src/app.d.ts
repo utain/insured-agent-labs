@@ -1,5 +1,5 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
-import type { User } from '$lib/types';
+import type { User } from '$lib/schemas';
 
 declare global {
 	namespace App {

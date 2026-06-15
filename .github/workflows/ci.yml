@@ -12,62 +12,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ── Detect which parts of the codebase changed ──────────────────────────────
-  changes:
-    name: Detect changes
-    runs-on: ubuntu-latest
-    outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      web: ${{ steps.filter.outputs.web }}
-      e2e: ${{ steps.filter.outputs.e2e }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            backend:
-              - 'backend/**'
-              - '.github/workflows/ci.yml'
-            web:
-              - 'web/**'
-              - '.github/workflows/ci.yml'
-            e2e:
-              - 'backend/**'
-              - 'web/**'
-              - 'e2e/**'
-              - 'docker-compose.yml'
-              - 'Dockerfile'
-              - '.github/workflows/ci.yml'
-
-  # ── Backend: clippy + cargo test ────────────────────────────────────────────
-  backend:
-    name: Backend (clippy + test)
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: backend
-      # curl is required by the utoipa-swagger-ui build script (Swagger UI assets).
-      - name: Ensure curl
-        run: curl --version >/dev/null
-      - run: cargo clippy --all-targets -- -D warnings
-      - run: cargo test
-
   # ── Web: svelte-check + lint + vitest + build ────────────────────────────────
   web:
-    name: Web (check + lint + unit)
-    needs: changes
-    if: needs.changes.outputs.web == 'true'
+    name: Web (check + lint + unit + build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -80,30 +27,20 @@ jobs:
       - name: Enable pnpm
         run: corepack enable
       - run: pnpm install --frozen-lockfile
-      # Paraglide generates $lib/paraglide/* from project.inlang at dev/build time.
-      # It's gitignored, so we compile it explicitly before svelte-check.
-      - name: Compile Paraglide i18n
-        run: pnpm exec paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide
-      # The vitest `client` project runs in a real browser (Playwright provider).
-      - name: Install Chromium for browser unit tests
-        run: pnpm exec playwright install --with-deps chromium
       - run: pnpm check
       - run: pnpm lint
       - run: pnpm test:unit -- --run
       - run: pnpm build
 
-  # ── Blackbox e2e: full Compose stack + Playwright ───────────────────────────
+  # ── Blackbox e2e: built app + Playwright ─────────────────────────────────────
   e2e:
-    name: Blackbox e2e (API + UI vs. compose stack)
-    needs: changes
-    if: needs.changes.outputs.e2e == 'true'
+    name: Blackbox e2e (API + UI)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
-      # Build images and bring up the full stack (web :5173, backend :3000).
-      - name: Build & start the stack
+      - name: Build & start the app
         run: docker compose up --build -d
 
       - uses: actions/setup-node@v4
@@ -121,11 +58,10 @@ jobs:
       - name: Run blackbox suite
         working-directory: e2e
         env:
-          API_BASE_URL: http://localhost:3000
-          WEB_BASE_URL: http://localhost:5173
+          BASE_URL: http://localhost:5173
         run: pnpm test
 
-      - name: Dump stack logs on failure
+      - name: Dump logs on failure
         if: failure()
         run: docker compose logs --no-color
 
@@ -137,6 +73,6 @@ jobs:
           path: e2e/playwright-report
           retention-days: 7
 
-      - name: Stop the stack
+      - name: Stop the app
         if: always()
-        run: docker compose down -v
+        run: docker compose down

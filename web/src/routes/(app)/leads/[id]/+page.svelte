@@ -1,103 +1,80 @@
 <script lang="ts">
-	import { m } from '$lib/paraglide/messages.js';
+	import { formatDate, statusBadgeClass } from '$lib/format';
 
 	let { data } = $props();
 	const lead = $derived(data.lead);
 
-	const genderLabel = (g: string) =>
-		g === 'male'
-			? m['leads.gender.male']()
-			: g === 'female'
-				? m['leads.gender.female']()
-				: m['leads.gender.other']();
+	const rows = $derived([
+		['Date of birth', `${lead.dob} · age ${data.lead ? ageOf(lead.dob) : ''}`],
+		['Gender', lead.gender],
+		['Occupation', lead.occupation ?? '—'],
+		['National ID', lead.national_id ?? '—'],
+		['Phone', lead.phone ?? '—'],
+		['Email', lead.email ?? '—']
+	]);
 
-	const formatBaht = (n: number | null) => (n != null ? '฿' + n.toLocaleString() : '—');
+	function ageOf(dob: string): number {
+		const d = new Date(dob);
+		return Math.floor((Date.now() - d.getTime()) / (365.25 * 24 * 3600 * 1000));
+	}
 </script>
 
-<svelte:head><title>{m['leads.detail.title']()} · {m['app.title']()}</title></svelte:head>
+<svelte:head><title>{lead.full_name} · InsureAgentLabs</title></svelte:head>
 
-<div class="max-w-2xl mx-auto" data-testid="lead-detail-page">
-	<a href="/leads" class="text-sm text-slate-500 hover:text-slate-700 mb-4 inline-block">
-		← {m['leads.detail.back']()}
-	</a>
-	<h1 data-testid="lead-detail-page-title" class="text-2xl font-bold text-slate-900 mb-6">
-		{m['leads.detail.title']()}
-	</h1>
+<div class="mx-auto max-w-2xl space-y-6" data-testid="lead-detail-page">
+	<a href="/leads" class="text-sm text-slate-500 hover:underline">← Back to leads</a>
 
-	<dl class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">
-		<div class="px-5 py-3 flex justify-between gap-4">
-			<dt class="text-sm text-slate-500" data-testid="lead-detail-full-name-label">
-				{m['leads.full_name.label']()}
-			</dt>
-			<dd class="text-sm font-medium text-slate-900 text-right" data-testid="lead-detail-full-name">
+	<div class="flex items-center justify-between">
+		<div>
+			<h1 data-testid="lead-detail-page-title" class="text-2xl font-bold text-slate-900">
 				{lead.full_name}
-			</dd>
-		</div>
-		<div class="px-5 py-3 flex justify-between gap-4">
-			<dt class="text-sm text-slate-500">{m['leads.national_id.label']()}</dt>
-			<dd
-				class="text-sm font-medium text-slate-900 text-right"
-				data-testid="lead-detail-national-id"
+			</h1>
+			<span
+				class="badge mt-1 capitalize {statusBadgeClass(lead.status)}"
+				data-testid="lead-detail-status">{lead.status}</span
 			>
-				{lead.national_id}
-			</dd>
 		</div>
-		<div class="px-5 py-3 flex justify-between gap-4">
-			<dt class="text-sm text-slate-500">{m['leads.dob.label']()}</dt>
-			<dd class="text-sm font-medium text-slate-900 text-right" data-testid="lead-detail-dob">
-				{lead.dob}
-			</dd>
-		</div>
-		<div class="px-5 py-3 flex justify-between gap-4">
-			<dt class="text-sm text-slate-500">{m['leads.gender.label']()}</dt>
-			<dd class="text-sm font-medium text-slate-900 text-right" data-testid="lead-detail-gender">
-				{genderLabel(lead.gender)}
-			</dd>
-		</div>
-		<div class="px-5 py-3 flex justify-between gap-4">
-			<dt class="text-sm text-slate-500">{m['leads.phone.label']()}</dt>
-			<dd class="text-sm font-medium text-slate-900 text-right" data-testid="lead-detail-phone">
-				{lead.phone}
-			</dd>
-		</div>
-		<div class="px-5 py-3 flex justify-between gap-4">
-			<dt class="text-sm text-slate-500">{m['leads.email.label']()}</dt>
-			<dd class="text-sm font-medium text-slate-900 text-right" data-testid="lead-detail-email">
-				{lead.email ?? '—'}
-			</dd>
-		</div>
-		<div class="px-5 py-3 flex justify-between gap-4">
-			<dt class="text-sm text-slate-500">{m['leads.occupation.label']()}</dt>
-			<dd
-				class="text-sm font-medium text-slate-900 text-right"
-				data-testid="lead-detail-occupation"
-			>
-				{lead.occupation ?? '—'}
-			</dd>
-		</div>
-		<div class="px-5 py-3 flex justify-between gap-4">
-			<dt class="text-sm text-slate-500">{m['leads.income.label']()}</dt>
-			<dd class="text-sm font-medium text-slate-900 text-right" data-testid="lead-detail-income">
-				{formatBaht(lead.income)}
-			</dd>
-		</div>
-		<div class="px-5 py-3 flex justify-between gap-4">
-			<dt class="text-sm text-slate-500">Status</dt>
-			<dd class="text-sm font-medium text-slate-900 text-right" data-testid="lead-detail-status">
-				{lead.status}
-			</dd>
-		</div>
-	</dl>
-
-	<div class="mt-6 flex gap-3">
-		<!-- Will be wired in Phase 3 -->
 		<a
 			href="/quotations/new?leadId={lead.id}"
-			data-testid="lead-start-quotation-button"
-			class="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800"
+			class="btn-primary"
+			data-testid="lead-start-quotation-button">Start quotation</a
 		>
-			{m['leads.detail.start_quotation']()}
-		</a>
-		<!-- TODO: edit (Phase later) -->
 	</div>
+
+	<dl class="card divide-y divide-slate-100">
+		{#each rows as [label, value] (label)}
+			<div class="flex justify-between gap-4 px-5 py-3">
+				<dt class="text-sm text-slate-500">{label}</dt>
+				<dd class="text-right text-sm font-medium text-slate-900 capitalize">{value}</dd>
+			</div>
+		{/each}
+	</dl>
+
+	<section>
+		<h2 class="mb-2 text-lg font-semibold text-slate-900">Quotations</h2>
+		{#if data.quotations.length === 0}
+			<p class="card p-6 text-sm text-slate-500">No quotations yet for this lead.</p>
+		{:else}
+			<div class="card divide-y divide-slate-100">
+				{#each data.quotations as q (q.id)}
+					<a
+						href={q.status === 'illustrated' && q.illustration_id
+							? `/illustrations/${q.illustration_id}`
+							: `/quotations/${q.id}`}
+						class="flex items-center justify-between px-5 py-3 hover:bg-slate-50"
+					>
+						<div>
+							<div class="text-sm font-medium text-slate-900">
+								{q.base_product_code ?? 'Draft'} · {formatDate(q.created_at)}
+							</div>
+							<div class="text-xs text-slate-500">
+								{q.calc ? `฿${q.calc.total_annual_premium.toLocaleString()}/yr` : 'No premium yet'}
+							</div>
+						</div>
+						<span class="badge capitalize {statusBadgeClass(q.status)}">{q.status}</span>
+					</a>
+				{/each}
+			</div>
+		{/if}
+	</section>
 </div>
