@@ -1,20 +1,20 @@
-import { test, expect, json, bearer } from '../../fixtures/api';
-import { validLead } from '../../fixtures/data';
+import { test, expect } from '../../fixtures/api';
+import { SEED, validLead } from '../../fixtures/data';
 
 test.describe('API · admin', () => {
-	test('reset restores the deterministic seed', async ({ api, standardToken }) => {
+	test('reset restores the deterministic seed', async ({ agent, anon }) => {
 		// Mutate: add a lead.
-		await api.post('/api/leads', { headers: bearer(standardToken), data: validLead() });
+		await agent.leads.create(validLead());
 
-		const reset = await api.post('/api/admin/reset');
-		expect((await json(reset, 200)).ok).toBe(true);
+		const reset = await anon.admin.reset();
+		expect(reset.ok).toBe(true);
 
-		const state = await json(await api.get('/api/admin/debug-state'), 200);
-		expect(state.users).toBe(5);
-		expect(state.products).toBe(4);
-		expect(state.riders).toBe(27);
-		expect(state.packages).toBe(3);
-		expect(state.quotations).toBe(0);
-		expect(state.illustrations).toBe(0);
+		const state = await anon.admin.debugState();
+		expect(state.users).toBe(SEED.users);
+		expect(state.products).toBe(SEED.products);
+		expect(state.riders).toBe(SEED.riders);
+		expect(state.packages).toBe(SEED.packages);
+		expect(state.quotations).toBe(SEED.quotations);
+		expect(state.illustrations).toBe(SEED.illustrations);
 	});
 });

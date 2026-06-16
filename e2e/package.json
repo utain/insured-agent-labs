@@ -8,13 +8,18 @@
     "test": "playwright test",
     "test:api": "playwright test --project=api",
     "test:ui": "playwright test --project=ui",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:regression": "playwright test --grep-invert @smoke",
+    "typecheck": "tsc --noEmit",
     "report": "playwright show-report",
+    "merge-reports": "playwright merge-reports --reporter html ./blob-report",
     "install:browsers": "playwright install --with-deps chromium"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
     "@types/node": "^22",
     "dotenv": "^17.0.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "zod": "^4.4.3"
   }
 }

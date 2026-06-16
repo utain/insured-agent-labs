@@ -1,4 +1,5 @@
-import { test as base } from './api';
+import { test as base, expect, mergeTests } from '@playwright/test';
+import { test as apiTest } from './api';
 import {
 	LoginPage,
 	DashboardPage,
@@ -7,7 +8,7 @@ import {
 	AppHeader
 } from '../pages';
 
-/** UI test harness: the API `test` extended with a Page/Component Object per screen. */
+/** UI test harness: one Page/Component Object per screen, delivered as fixtures. */
 type PageObjects = {
 	loginPage: LoginPage;
 	dashboardPage: DashboardPage;
@@ -16,22 +17,18 @@ type PageObjects = {
 	header: AppHeader;
 };
 
-export const test = base.extend<PageObjects>({
-	loginPage: async ({ page }, use) => {
-		await use(new LoginPage(page));
-	},
-	dashboardPage: async ({ page }, use) => {
-		await use(new DashboardPage(page));
-	},
-	leadFormPage: async ({ page }, use) => {
-		await use(new LeadFormPage(page));
-	},
-	wizardPage: async ({ page }, use) => {
-		await use(new QuotationWizardPage(page));
-	},
-	header: async ({ page }, use) => {
-		await use(new AppHeader(page));
-	}
+const pageObjects = base.extend<PageObjects>({
+	loginPage: async ({ page }, use) => use(new LoginPage(page)),
+	dashboardPage: async ({ page }, use) => use(new DashboardPage(page)),
+	leadFormPage: async ({ page }, use) => use(new LeadFormPage(page)),
+	wizardPage: async ({ page }, use) => use(new QuotationWizardPage(page)),
+	header: async ({ page }, use) => use(new AppHeader(page))
 });
 
-export { expect, resetState, login } from './api';
+/**
+ * UI specs get the Page Objects *and* the API fixtures (`anon`, `agent`,
+ * `loginAs`, `resetState`) — so a browser journey can seed/reset state over the
+ * API. `mergeTests` composes the two independent fixture sets.
+ */
+export const test = mergeTests(apiTest, pageObjects);
+export { expect };
