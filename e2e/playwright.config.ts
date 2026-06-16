@@ -16,7 +16,14 @@ import { WEB_BASE_URL } from './fixtures/env';
  *
  * The in-memory store + global `POST /api/admin/reset` mean the suite runs
  * single-worker / non-parallel to keep state deterministic across specs.
+ * Scale-out is therefore by CI *sharding* (each shard runs its own app stack),
+ * not by workers — see .github/workflows/ci.yml.
  */
+
+// When a shard runs in CI we emit a `blob` report per shard; a downstream job
+// merges them into one HTML report. Locally we keep the human-friendly HTML.
+const sharded = !!process.env.PW_SHARD;
+
 export default defineConfig({
   testDir: './tests',
   globalSetup: './global-setup.ts',
@@ -24,7 +31,9 @@ export default defineConfig({
   workers: 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  reporter: sharded
+    ? [['blob'], ['list']]
+    : [['list'], ['html', { open: 'never' }]],
   use: {
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',

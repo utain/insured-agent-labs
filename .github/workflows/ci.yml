@@ -32,11 +32,18 @@ jobs:
       - run: pnpm test:unit -- --run
       - run: pnpm build
 
-  # ── Blackbox e2e: built app + Playwright ─────────────────────────────────────
+  # ── Blackbox e2e: built app + Playwright, sharded across runners ─────────────
+  # The app store is in-memory with a global reset, so the suite stays
+  # single-worker for determinism. We scale out by *sharding* instead: each shard
+  # is a separate runner with its own app stack, so shards never share state.
   e2e:
-    name: Blackbox e2e (API + UI)
+    name: Blackbox e2e (shard ${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
 
@@ -55,24 +62,60 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm exec playwright install --with-deps chromium
 
-      - name: Run blackbox suite
+      - name: Run shard
         working-directory: e2e
         env:
           BASE_URL: http://localhost:5173
-        run: pnpm test
+          PW_SHARD: ${{ matrix.shard }}
+        run: pnpm test --shard=${{ matrix.shard }}/4
 
       - name: Dump logs on failure
         if: failure()
         run: docker compose logs --no-color
 
-      - name: Upload Playwright report
+      - name: Upload blob report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
-          path: e2e/playwright-report
+          name: blob-report-${{ matrix.shard }}
+          path: e2e/blob-report
           retention-days: 7
 
       - name: Stop the app
         if: always()
         run: docker compose down
+
+  # ── Merge the per-shard blob reports into one HTML report ────────────────────
+  e2e-report:
+    name: Merge e2e reports
+    if: ${{ !cancelled() }}
+    needs: e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Enable pnpm
+        run: corepack enable
+      - name: Install e2e deps
+        working-directory: e2e
+        run: pnpm install --frozen-lockfile
+
+      - name: Download all shard blob reports
+        uses: actions/download-artifact@v4
+        with:
+          path: e2e/all-blobs
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Merge into a single HTML report
+        working-directory: e2e
+        run: pnpm exec playwright merge-reports --reporter html ./all-blobs
+
+      - name: Upload merged HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 7

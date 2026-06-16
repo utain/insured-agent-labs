@@ -1,12 +1,12 @@
-import { test, expect, resetState } from '../../fixtures/pages';
+import { test, expect } from '../../fixtures/pages';
 import { USERS, PRODUCTS, validInsured } from '../../fixtures/data';
 
 test.describe('UI · sale journey (quotation → illustration)', () => {
-	test.beforeEach(async ({ api }) => {
-		await resetState(api);
+	test.beforeEach(async ({ anon }) => {
+		await anon.admin.reset();
 	});
 
-	test('standard agent builds a quotation and produces a Sales Illustration', async ({
+	test('standard agent builds a quotation and produces a Sales Illustration', { tag: ['@smoke'] }, async ({
 		page,
 		loginPage,
 		wizardPage

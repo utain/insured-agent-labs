@@ -1,8 +1,8 @@
-import { test, expect, json } from '../../fixtures/api';
+import { test, expect } from '../../fixtures/api';
 
 test.describe('API · health', () => {
-  test('GET /api/healthz returns ok', async ({ api }) => {
-    const res = await api.get('/api/healthz');
-    expect(await json(res, 200)).toMatchObject({ status: 'ok' });
-  });
+	test('GET /api/healthz returns ok', { tag: ['@smoke'] }, async ({ anon }) => {
+		const health = await anon.admin.health();
+		expect(health.status).toBe('ok');
+	});
 });
