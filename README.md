@@ -6,6 +6,8 @@ Built for QA engineers to practice functional, API, and accessibility-based test
 
 This MVP covers the **quotation journey only**: log in → manage leads & packages → build a quotation (insured → plan/package + riders → coverage & premium) → produce a **Sales Illustration**.
 
+![InsureAgentLabs — agent dashboard](docs/app-screenshot.png)
+
 ---
 
 ## Tech stack
