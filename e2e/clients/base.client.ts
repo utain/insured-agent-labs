@@ -26,11 +26,6 @@ export class HttpClient {
 		private readonly token?: string
 	) {}
 
-	/** A copy of this client bound to a (different) bearer token. */
-	withToken(token: string): HttpClient {
-		return new HttpClient(this.ctx, token);
-	}
-
 	get<T = unknown>(path: string, opts: RequestOptions<T> = {}): Promise<T> {
 		return this.call('get', path, opts, 200);
 	}

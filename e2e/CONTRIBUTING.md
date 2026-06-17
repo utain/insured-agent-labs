@@ -33,8 +33,8 @@ tests/     api/*.api.spec.ts and ui/*.e2e.spec.ts — domain language only
 ```
 
 ### `schemas/` — the contract is validated, not assumed
-Every response is parsed by a Zod schema in `HttpClient`. A drifted field fails the
-test with a precise `Response contract mismatch: …` message. Schemas mirror the
+Every response is parsed by a Zod schema in `HttpClient`. A missing or wrong-typed
+field fails the test with a precise `Response contract mismatch: …` message. Schemas mirror the
 app's domain types in `web/src/lib/schemas.ts`, so they double as living API docs
 and the **single source of truth for response types** (via `z.infer`). No `any`.
 

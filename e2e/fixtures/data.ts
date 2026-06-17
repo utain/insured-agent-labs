@@ -15,7 +15,7 @@ export const PRODUCTS = {
 	ulip: 'LIFE_ULIP'
 } as const;
 
-/** Rider plan codes (seeded as `${TYPE}_PLAN_${i}`). The handful referenced by specs. */
+/** Rider plan codes (seeded as `${TYPE}_PLAN_${i}`) — a small palette for specs to draw on. */
 export const RIDERS = {
 	health2: 'HEALTH_PLAN_2',
 	health4: 'HEALTH_PLAN_4',

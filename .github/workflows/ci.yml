@@ -111,9 +111,15 @@ jobs:
 
       - name: Merge into a single HTML report
         working-directory: e2e
-        run: pnpm exec playwright merge-reports --reporter html ./all-blobs
+        run: |
+          if [ -z "$(ls -A all-blobs 2>/dev/null)" ]; then
+            echo "No blob reports to merge — every shard failed before producing one."
+            exit 0
+          fi
+          pnpm exec playwright merge-reports --reporter html ./all-blobs
 
       - name: Upload merged HTML report
+        if: ${{ hashFiles('e2e/playwright-report/**') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
