@@ -39,6 +39,6 @@
 	},
 	"dependencies": {
 		"swagger-ui-dist": "^5.32.6",
-		"zod": "^4.4.3"
+		"zod": "^4.6.6"
 	}
 }
